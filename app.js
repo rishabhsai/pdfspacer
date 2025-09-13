@@ -41,7 +41,7 @@ class PDFAnswerSpacer {
         
         // Tools
         this.addSpaceBtn = document.getElementById('addSpaceBtn');
-        this.panBtn = document.getElementById('panBtn');
+        this.textBtn = document.getElementById('textBtn');
         
         // Viewer
         this.pdfViewer = document.getElementById('pdfViewer');
@@ -79,7 +79,7 @@ class PDFAnswerSpacer {
         
         // Tools
         this.addSpaceBtn.addEventListener('click', () => this.setTool('addSpace'));
-        this.panBtn.addEventListener('click', () => this.setTool('pan'));
+        this.textBtn.addEventListener('click', () => this.setTool('text'));
         
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => this.handleKeydown(e));
@@ -342,8 +342,14 @@ class PDFAnswerSpacer {
 
 
     handlePageClick(e) {
-        if (this.currentTool !== 'addSpace') return;
-        
+        if (this.currentTool === 'addSpace') {
+            this.handleAddSpaceClick(e);
+        } else if (this.currentTool === 'text') {
+            this.handleTextClick(e);
+        }
+    }
+
+    handleAddSpaceClick(e) {
         const pageContainer = e.currentTarget;
         const rect = pageContainer.getBoundingClientRect();
         const clickY = e.clientY - rect.top;
@@ -380,6 +386,20 @@ class PDFAnswerSpacer {
         this.renderCurrentPage();
         this.selectSpacer(spacer.id);
         this.saveSettings();
+    }
+
+    handleTextClick(e) {
+        const pageContainer = e.currentTarget;
+        const rect = pageContainer.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const clickY = e.clientY - rect.top;
+        
+        // Prompt for text input
+        const text = prompt('Enter text to add:');
+        if (text && text.trim()) {
+            // For now, just show an alert - in a full implementation, you'd add text elements
+            alert(`Text "${text}" would be added at position (${Math.round(clickX)}, ${Math.round(clickY)})`);
+        }
     }
 
     handlePageContextMenu(e) {
@@ -548,9 +568,9 @@ class PDFAnswerSpacer {
         if (tool === 'addSpace') {
             this.addSpaceBtn.classList.add('active');
             document.body.style.cursor = 'crosshair';
-        } else if (tool === 'pan') {
-            this.panBtn.classList.add('active');
-            document.body.style.cursor = 'grab';
+        } else if (tool === 'text') {
+            this.textBtn.classList.add('active');
+            document.body.style.cursor = 'text';
         } else {
             document.body.style.cursor = 'default';
         }
@@ -928,15 +948,26 @@ class PDFAnswerSpacer {
             pdf.addPage();
         }
         
+        // Calculate the actual content dimensions from the original viewport
+        const originalWidth = reflowedPage.viewport.width;
+        const originalHeight = reflowedPage.viewport.height + (reflowedPage.totalHeight - reflowedPage.viewport.height);
+        
+        // Scale to fit A4 while maintaining aspect ratio
+        const scaleX = A4_WIDTH / originalWidth;
+        const scaleY = A4_HEIGHT / originalHeight;
+        const scale = Math.min(scaleX, scaleY);
+        
+        // Calculate actual dimensions on A4
+        const scaledWidth = originalWidth * scale;
+        const scaledHeight = originalHeight * scale;
+        const offsetX = (A4_WIDTH - scaledWidth) / 2;
+        const offsetY = (A4_HEIGHT - scaledHeight) / 2;
+        
         // Create a high-resolution canvas for better quality
-        const scale = 2; // Higher resolution
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
-        canvas.width = A4_WIDTH * scale;
-        canvas.height = A4_HEIGHT * scale;
-        
-        // Scale the context for high resolution
-        context.scale(scale, scale);
+        canvas.width = A4_WIDTH;
+        canvas.height = A4_HEIGHT;
         
         // Fill with white background
         context.fillStyle = 'white';
@@ -945,69 +976,66 @@ class PDFAnswerSpacer {
         // Render each segment
         for (const segment of reflowedPage.contentSegments) {
             if (segment.isSpacer) {
-                // Draw spacer with proper scaling
-                this.drawSpacerOnCanvas(context, segment.spacer, A4_WIDTH, segment.y, segment.height);
+                // Draw spacer with proper scaling and positioning
+                const spacerY = offsetY + (segment.y * scale);
+                const spacerHeight = segment.height * scale;
+                this.drawSpacerOnCanvas(context, segment.spacer, scaledWidth, spacerY, spacerHeight, scale);
             } else {
                 // Draw original content segment
-                await this.drawContentSegment(context, reflowedPage.page, reflowedPage.viewport, segment, A4_WIDTH, A4_HEIGHT);
+                await this.drawContentSegment(context, reflowedPage.page, reflowedPage.viewport, segment, scaledWidth, scaledHeight, offsetX, offsetY, scale);
             }
         }
         
         // Add to PDF with high quality
-        const imgData = canvas.toDataURL('image/jpeg', 0.95); // Use JPEG for better compression
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
         pdf.addImage(imgData, 'JPEG', 0, 0, A4_WIDTH, A4_HEIGHT);
     }
 
-    async drawContentSegment(context, page, viewport, segment, targetWidth, targetHeight) {
+    async drawContentSegment(context, page, viewport, segment, targetWidth, targetHeight, offsetX = 0, offsetY = 0, scale = 1) {
         // Create a high-resolution temporary canvas for the original content
-        const scale = 2; // Higher resolution
+        const renderScale = 2; // Higher resolution
         const tempCanvas = document.createElement('canvas');
         const tempContext = tempCanvas.getContext('2d');
-        tempCanvas.width = viewport.width * scale;
-        tempCanvas.height = viewport.height * scale;
+        tempCanvas.width = viewport.width * renderScale;
+        tempCanvas.height = viewport.height * renderScale;
         
         // Scale the context for high resolution
-        tempContext.scale(scale, scale);
+        tempContext.scale(renderScale, renderScale);
         
         // Render the full page at high resolution
-        const highResViewport = page.getViewport({ scale: viewport.scale * scale });
+        const highResViewport = page.getViewport({ scale: viewport.scale * renderScale });
         await page.render({
             canvasContext: tempContext,
             viewport: highResViewport
         }).promise;
         
-        // Calculate scaling to fit target dimensions
-        const scaleX = targetWidth / viewport.width;
-        const scaleY = targetHeight / viewport.height;
-        const finalScale = Math.min(scaleX, scaleY);
-        
-        // Draw the segment to the main canvas
+        // Draw the segment to the main canvas with proper positioning
         const sourceY = segment.originalY;
         const sourceHeight = segment.height;
-        const destX = (targetWidth - viewport.width * finalScale) / 2;
-        const destY = segment.y;
-        const destWidth = viewport.width * finalScale;
-        const destHeight = sourceHeight * finalScale;
+        const destX = offsetX;
+        const destY = offsetY + (segment.y * scale);
+        const destWidth = targetWidth;
+        const destHeight = sourceHeight * scale;
         
         context.drawImage(
             tempCanvas,
-            0, sourceY * scale, viewport.width * scale, sourceHeight * scale,
+            0, sourceY * renderScale, viewport.width * renderScale, sourceHeight * renderScale,
             destX, destY, destWidth, destHeight
         );
     }
 
-    drawSpacerOnCanvas(context, spacer, pageWidth, y = spacer.y, height = spacer.height) {
+    drawSpacerOnCanvas(context, spacer, pageWidth, y = spacer.y, height = spacer.height, scale = 1) {
         context.save();
         
         // Draw spacer background
         context.fillStyle = 'white';
         context.fillRect(0, y, pageWidth, height);
         
-        // Draw spacer style
+        // Draw spacer style with proper scaling
         if (spacer.style === 'ruled') {
             context.strokeStyle = '#ddd';
             context.lineWidth = 1;
-            for (let ruleY = y; ruleY < y + height; ruleY += spacer.ruleSpacing) {
+            for (let ruleY = y; ruleY < y + height; ruleY += spacer.ruleSpacing * scale) {
                 context.beginPath();
                 context.moveTo(0, ruleY);
                 context.lineTo(pageWidth, ruleY);
@@ -1015,8 +1043,8 @@ class PDFAnswerSpacer {
             }
         } else if (spacer.style === 'dot-grid') {
             context.fillStyle = '#ddd';
-            for (let x = 0; x < pageWidth; x += spacer.dotPitch) {
-                for (let dotY = y; dotY < y + height; dotY += spacer.dotPitch) {
+            for (let x = 0; x < pageWidth; x += spacer.dotPitch * scale) {
+                for (let dotY = y; dotY < y + height; dotY += spacer.dotPitch * scale) {
                     context.beginPath();
                     context.arc(x, dotY, 1, 0, Math.PI * 2);
                     context.fill();
@@ -1026,14 +1054,14 @@ class PDFAnswerSpacer {
             context.strokeStyle = '#ddd';
             context.lineWidth = 1;
             // Draw vertical lines
-            for (let x = 0; x < pageWidth; x += spacer.gridSize) {
+            for (let x = 0; x < pageWidth; x += spacer.gridSize * scale) {
                 context.beginPath();
                 context.moveTo(x, y);
                 context.lineTo(x, y + height);
                 context.stroke();
             }
             // Draw horizontal lines
-            for (let gridY = y; gridY < y + height; gridY += spacer.gridSize) {
+            for (let gridY = y; gridY < y + height; gridY += spacer.gridSize * scale) {
                 context.beginPath();
                 context.moveTo(0, gridY);
                 context.lineTo(pageWidth, gridY);

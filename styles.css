@@ -427,14 +427,15 @@ h1 {
 
 .spacer-handle {
     position: absolute;
-    top: -6px;
-    right: -6px;
+    bottom: -6px;
+    right: 50%;
+    transform: translateX(50%);
     width: 12px;
     height: 12px;
     background: #e74c3c;
     border: 2px solid white;
     border-radius: 50%;
-    cursor: nw-resize;
+    cursor: ns-resize;
     display: none;
 }
 
