@@ -777,16 +777,13 @@ class PDFAnswerSpacer {
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF();
             
-            // Export each page with spacers
-            let progress = 0;
-            const totalPages = this.totalPages;
-            
-            for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+            // Export each page
+            for (let pageNum = 1; pageNum <= this.totalPages; pageNum++) {
                 // Update progress
-                progress = ((pageNum) / totalPages) * 100;
+                const progress = ((pageNum) / this.totalPages) * 100;
                 progressOverlay.querySelector('.progress-fill').style.width = progress + '%';
                 
-                await this.exportPage(pdf, pageNum, pageNum === 1);
+                await this.exportSinglePage(pdf, pageNum, pageNum === 1);
             }
             
             // Save the PDF
@@ -799,283 +796,15 @@ class PDFAnswerSpacer {
         }
     }
 
-    async exportPage(pdf, pageNum, isFirstPage) {
+    async exportSinglePage(pdf, pageNum, isFirstPage) {
         const { jsPDF } = window.jspdf;
         const page = await this.pdfDocument.getPage(pageNum);
         const pageSpacers = this.spacers.get(pageNum) || [];
         
-        if (pageSpacers.length === 0) {
-            // No spacers, export page as-is
-            const viewport = page.getViewport({ scale: 1.0 });
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-            
-            await page.render({
-                canvasContext: context,
-                viewport: viewport
-            }).promise;
-            
-            if (!isFirstPage) pdf.addPage();
-            
-            // Scale to fit A4
-            const A4_WIDTH = 595;
-            const A4_HEIGHT = 842;
-            const scaleX = A4_WIDTH / viewport.width;
-            const scaleY = A4_HEIGHT / viewport.height;
-            const scale = Math.min(scaleX, scaleY);
-            
-            const imgData = canvas.toDataURL('image/jpeg', 0.95);
-            pdf.addImage(imgData, 'JPEG', 0, 0, viewport.width * scale, viewport.height * scale);
-            return;
-        }
+        // Create a standard A4-sized canvas
+        const A4_WIDTH = 595; // A4 width in points
+        const A4_HEIGHT = 842; // A4 height in points
         
-        // Has spacers, need to reflow
-        const viewport = page.getViewport({ scale: 1.0 });
-        const sortedSpacers = [...pageSpacers].sort((a, b) => a.y - b.y);
-        
-        // Calculate total height with spacers
-        let totalHeight = viewport.height;
-        for (const spacer of sortedSpacers) {
-            totalHeight += spacer.height;
-        }
-        
-        // Create canvas for the reflowed page
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-        canvas.width = viewport.width;
-        canvas.height = totalHeight;
-        
-        // Fill with white background
-        context.fillStyle = 'white';
-        context.fillRect(0, 0, viewport.width, totalHeight);
-        
-        // Render content segments and spacers
-        let currentY = 0;
-        let cumulativeOffset = 0;
-        
-        for (let i = 0; i < sortedSpacers.length; i++) {
-            const spacer = sortedSpacers[i];
-            
-            // Render content before spacer
-            if (spacer.y > currentY) {
-                const contentHeight = spacer.y - currentY;
-                await this.renderContentSegment(context, page, viewport, currentY, contentHeight, currentY + cumulativeOffset);
-            }
-            
-            // Render spacer
-            const spacerY = spacer.y + cumulativeOffset;
-            this.drawSpacerOnCanvas(context, spacer, viewport.width, spacerY, spacer.height);
-            
-            currentY = spacer.y;
-            cumulativeOffset += spacer.height;
-        }
-        
-        // Render remaining content
-        if (currentY < viewport.height) {
-            const remainingHeight = viewport.height - currentY;
-            await this.renderContentSegment(context, page, viewport, currentY, remainingHeight, currentY + cumulativeOffset);
-        }
-        
-        if (!isFirstPage) pdf.addPage();
-        
-        // Scale to fit A4
-        const A4_WIDTH = 595;
-        const A4_HEIGHT = 842;
-        const scaleX = A4_WIDTH / viewport.width;
-        const scaleY = A4_HEIGHT / totalHeight;
-        const scale = Math.min(scaleX, scaleY);
-        
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-        pdf.addImage(imgData, 'JPEG', 0, 0, viewport.width * scale, totalHeight * scale);
-    }
-
-    async renderContentSegment(context, page, viewport, startY, height, destY) {
-        // Create temporary canvas for this segment
-        const tempCanvas = document.createElement('canvas');
-        const tempContext = tempCanvas.getContext('2d');
-        tempCanvas.width = viewport.width;
-        tempCanvas.height = viewport.height;
-        
-        // Render full page
-        await page.render({
-            canvasContext: tempContext,
-            viewport: viewport
-        }).promise;
-        
-        // Draw the segment
-        context.drawImage(
-            tempCanvas,
-            0, startY, viewport.width, height,
-            0, destY, viewport.width, height
-        );
-    }
-
-    async calculateReflowedPages() {
-        const reflowedPages = [];
-        const A4_HEIGHT = 842; // A4 height in points (jsPDF units)
-        const A4_WIDTH = 595;  // A4 width in points
-        
-        for (let pageNum = 1; pageNum <= this.totalPages; pageNum++) {
-            const page = await this.pdfDocument.getPage(pageNum);
-            const viewport = page.getViewport({ scale: 1.0 });
-            const pageSpacers = this.spacers.get(pageNum) || [];
-            
-            if (pageSpacers.length === 0) {
-                // No spacers on this page, add as-is
-                reflowedPages.push({
-                    originalPageNum: pageNum,
-                    page: page,
-                    viewport: viewport,
-                    contentSegments: [{
-                        y: 0,
-                        height: viewport.height,
-                        isSpacer: false
-                    }]
-                });
-                continue;
-            }
-            
-            // Sort spacers by Y position
-            const sortedSpacers = [...pageSpacers].sort((a, b) => a.y - b.y);
-            
-            // Create content segments
-            const segments = [];
-            let currentY = 0;
-            let cumulativeOffset = 0;
-            
-            for (let i = 0; i < sortedSpacers.length; i++) {
-                const spacer = sortedSpacers[i];
-                
-                // Add content before spacer
-                if (spacer.y > currentY) {
-                    segments.push({
-                        y: currentY,
-                        height: spacer.y - currentY,
-                        isSpacer: false,
-                        originalY: currentY
-                    });
-                }
-                
-                // Add spacer
-                segments.push({
-                    y: spacer.y + cumulativeOffset,
-                    height: spacer.height,
-                    isSpacer: true,
-                    spacer: spacer,
-                    originalY: spacer.y
-                });
-                
-                currentY = spacer.y;
-                cumulativeOffset += spacer.height;
-            }
-            
-            // Add remaining content after last spacer
-            if (currentY < viewport.height) {
-                segments.push({
-                    y: currentY + cumulativeOffset,
-                    height: viewport.height - currentY,
-                    isSpacer: false,
-                    originalY: currentY
-                });
-            }
-            
-            // Check if content overflows and split into multiple pages
-            const totalHeight = viewport.height + cumulativeOffset;
-            if (totalHeight <= A4_HEIGHT) {
-                // Fits on one page
-                reflowedPages.push({
-                    originalPageNum: pageNum,
-                    page: page,
-                    viewport: viewport,
-                    contentSegments: segments,
-                    totalHeight: totalHeight
-                });
-            } else {
-                // Need to split into multiple pages
-                const pages = this.splitPageIntoMultiple(segments, A4_HEIGHT, pageNum, page, viewport);
-                reflowedPages.push(...pages);
-            }
-        }
-        
-        return reflowedPages;
-    }
-
-    splitPageIntoMultiple(segments, maxHeight, originalPageNum, page, viewport) {
-        const pages = [];
-        let currentPageY = 0;
-        let currentPageSegments = [];
-        let pageIndex = 0;
-        
-        for (const segment of segments) {
-            if (currentPageY + segment.height > maxHeight && currentPageSegments.length > 0) {
-                // Current page is full, start a new one
-                pages.push({
-                    originalPageNum: originalPageNum,
-                    pageIndex: pageIndex,
-                    page: page,
-                    viewport: viewport,
-                    contentSegments: currentPageSegments,
-                    totalHeight: currentPageY
-                });
-                
-                currentPageSegments = [];
-                currentPageY = 0;
-                pageIndex++;
-            }
-            
-            // Adjust segment Y for current page
-            const adjustedSegment = {
-                ...segment,
-                y: currentPageY
-            };
-            
-            currentPageSegments.push(adjustedSegment);
-            currentPageY += segment.height;
-        }
-        
-        // Add the last page if it has content
-        if (currentPageSegments.length > 0) {
-            pages.push({
-                originalPageNum: originalPageNum,
-                pageIndex: pageIndex,
-                page: page,
-                viewport: viewport,
-                contentSegments: currentPageSegments,
-                totalHeight: currentPageY
-            });
-        }
-        
-        return pages;
-    }
-
-    async renderReflowedPage(pdf, reflowedPage, isFirstPage) {
-        const { jsPDF } = window.jspdf;
-        const A4_WIDTH = 595;
-        const A4_HEIGHT = 842;
-        
-        if (!isFirstPage) {
-            pdf.addPage();
-        }
-        
-        // Use the current scale from the viewer for consistency
-        const viewerScale = this.scale;
-        const originalWidth = reflowedPage.viewport.width * viewerScale;
-        const originalHeight = reflowedPage.totalHeight * viewerScale;
-        
-        // Calculate scale to fit A4 while maintaining aspect ratio
-        const scaleX = A4_WIDTH / originalWidth;
-        const scaleY = A4_HEIGHT / originalHeight;
-        const exportScale = Math.min(scaleX, scaleY);
-        
-        // Calculate final dimensions
-        const finalWidth = originalWidth * exportScale;
-        const finalHeight = originalHeight * exportScale;
-        const offsetX = (A4_WIDTH - finalWidth) / 2;
-        const offsetY = (A4_HEIGHT - finalHeight) / 2;
-        
-        // Create canvas for export
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
         canvas.width = A4_WIDTH;
@@ -1085,56 +814,130 @@ class PDFAnswerSpacer {
         context.fillStyle = 'white';
         context.fillRect(0, 0, A4_WIDTH, A4_HEIGHT);
         
-        // Render each segment with proper scaling
-        for (const segment of reflowedPage.contentSegments) {
-            if (segment.isSpacer) {
-                // Draw spacer
-                const spacerY = offsetY + (segment.y * viewerScale * exportScale);
-                const spacerHeight = segment.height * viewerScale * exportScale;
-                this.drawSpacerOnCanvas(context, segment.spacer, finalWidth, spacerY, spacerHeight, exportScale);
-            } else {
-                // Draw content segment
-                await this.drawContentSegment(context, reflowedPage.page, reflowedPage.viewport, segment, finalWidth, finalHeight, offsetX, offsetY, exportScale, viewerScale);
-            }
+        if (pageSpacers.length === 0) {
+            // No spacers - render page normally
+            await this.renderPageWithoutSpacers(context, page, A4_WIDTH, A4_HEIGHT);
+        } else {
+            // Has spacers - render with reflow
+            await this.renderPageWithSpacers(context, page, pageSpacers, A4_WIDTH, A4_HEIGHT);
         }
+        
+        if (!isFirstPage) pdf.addPage();
         
         // Add to PDF
         const imgData = canvas.toDataURL('image/jpeg', 0.95);
         pdf.addImage(imgData, 'JPEG', 0, 0, A4_WIDTH, A4_HEIGHT);
     }
 
-    async drawContentSegment(context, page, viewport, segment, targetWidth, targetHeight, offsetX = 0, offsetY = 0, exportScale = 1, viewerScale = 1) {
-        // Create a high-resolution temporary canvas for the original content
-        const renderScale = 2; // Higher resolution
+    async renderPageWithoutSpacers(context, page, canvasWidth, canvasHeight) {
+        // Render the original page
+        const viewport = page.getViewport({ scale: 1.0 });
+        
+        // Calculate scale to fit canvas while maintaining aspect ratio
+        const scaleX = canvasWidth / viewport.width;
+        const scaleY = canvasHeight / viewport.height;
+        const scale = Math.min(scaleX, scaleY);
+        
+        // Calculate position to center the content
+        const scaledWidth = viewport.width * scale;
+        const scaledHeight = viewport.height * scale;
+        const offsetX = (canvasWidth - scaledWidth) / 2;
+        const offsetY = (canvasHeight - scaledHeight) / 2;
+        
+        // Create temporary canvas for the PDF page
         const tempCanvas = document.createElement('canvas');
         const tempContext = tempCanvas.getContext('2d');
-        tempCanvas.width = viewport.width * renderScale;
-        tempCanvas.height = viewport.height * renderScale;
+        tempCanvas.width = viewport.width;
+        tempCanvas.height = viewport.height;
         
-        // Scale the context for high resolution
-        tempContext.scale(renderScale, renderScale);
-        
-        // Render the full page at high resolution
-        const highResViewport = page.getViewport({ scale: viewport.scale * renderScale });
+        // Render the PDF page
         await page.render({
             canvasContext: tempContext,
-            viewport: highResViewport
+            viewport: viewport
         }).promise;
         
-        // Calculate proper scaling and positioning
-        const sourceY = segment.originalY;
-        const sourceHeight = segment.height;
-        const destX = offsetX;
-        const destY = offsetY + (segment.y * viewerScale * exportScale);
-        const destWidth = targetWidth;
-        const destHeight = sourceHeight * viewerScale * exportScale;
-        
+        // Draw to main canvas with proper scaling and centering
         context.drawImage(
             tempCanvas,
-            0, sourceY * renderScale, viewport.width * renderScale, sourceHeight * renderScale,
-            destX, destY, destWidth, destHeight
+            0, 0, viewport.width, viewport.height,
+            offsetX, offsetY, scaledWidth, scaledHeight
         );
     }
+
+    async renderPageWithSpacers(context, page, pageSpacers, canvasWidth, canvasHeight) {
+        const viewport = page.getViewport({ scale: 1.0 });
+        const sortedSpacers = [...pageSpacers].sort((a, b) => a.y - b.y);
+        
+        // Calculate total height including spacers
+        let totalHeight = viewport.height;
+        for (const spacer of sortedSpacers) {
+            totalHeight += spacer.height;
+        }
+        
+        // Calculate scale to fit the reflowed content on A4
+        const scaleX = canvasWidth / viewport.width;
+        const scaleY = canvasHeight / totalHeight;
+        const scale = Math.min(scaleX, scaleY);
+        
+        // Calculate position to center the content
+        const scaledWidth = viewport.width * scale;
+        const scaledHeight = totalHeight * scale;
+        const offsetX = (canvasWidth - scaledWidth) / 2;
+        const offsetY = (canvasHeight - scaledHeight) / 2;
+        
+        // Render content segments and spacers
+        let currentY = 0;
+        let cumulativeOffset = 0;
+        
+        // Create temporary canvas for PDF rendering
+        const tempCanvas = document.createElement('canvas');
+        const tempContext = tempCanvas.getContext('2d');
+        tempCanvas.width = viewport.width;
+        tempCanvas.height = viewport.height;
+        
+        // Render the full PDF page once
+        await page.render({
+            canvasContext: tempContext,
+            viewport: viewport
+        }).promise;
+        
+        for (let i = 0; i < sortedSpacers.length; i++) {
+            const spacer = sortedSpacers[i];
+            
+            // Render content before spacer
+            if (spacer.y > currentY) {
+                const contentHeight = spacer.y - currentY;
+                const destY = offsetY + (currentY + cumulativeOffset) * scale;
+                
+                context.drawImage(
+                    tempCanvas,
+                    0, currentY, viewport.width, contentHeight,
+                    offsetX, destY, scaledWidth, contentHeight * scale
+                );
+            }
+            
+            // Render spacer
+            const spacerY = offsetY + (spacer.y + cumulativeOffset) * scale;
+            const spacerHeight = spacer.height * scale;
+            this.drawSpacerOnCanvas(context, spacer, scaledWidth, spacerY, spacerHeight, scale);
+            
+            currentY = spacer.y;
+            cumulativeOffset += spacer.height;
+        }
+        
+        // Render remaining content after last spacer
+        if (currentY < viewport.height) {
+            const remainingHeight = viewport.height - currentY;
+            const destY = offsetY + (currentY + cumulativeOffset) * scale;
+            
+            context.drawImage(
+                tempCanvas,
+                0, currentY, viewport.width, remainingHeight,
+                offsetX, destY, scaledWidth, remainingHeight * scale
+            );
+        }
+    }
+
 
     drawSpacerOnCanvas(context, spacer, pageWidth, y = spacer.y, height = spacer.height, scale = 1) {
         context.save();
