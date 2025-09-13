@@ -18,9 +18,15 @@ class PDFAnswerSpacer {
     initializeElements() {
         // File controls
         this.pdfInput = document.getElementById('pdfInput');
+        this.projectInput = document.getElementById('projectInput');
         this.loadPdfBtn = document.getElementById('loadPdfBtn');
         this.loadPdfBtnMain = document.getElementById('loadPdfBtnMain');
         this.exportPdfBtn = document.getElementById('exportPdfBtn');
+        
+        // Project controls
+        this.saveProjectBtn = document.getElementById('saveProjectBtn');
+        this.loadProjectBtn = document.getElementById('loadProjectBtn');
+        this.clearProjectBtn = document.getElementById('clearProjectBtn');
         
         // Navigation controls
         this.prevPageBtn = document.getElementById('prevPageBtn');
@@ -55,6 +61,12 @@ class PDFAnswerSpacer {
         this.loadPdfBtnMain.addEventListener('click', () => this.pdfInput.click());
         this.pdfInput.addEventListener('change', (e) => this.loadPDF(e.target.files[0]));
         this.exportPdfBtn.addEventListener('click', () => this.exportPDF());
+        
+        // Project operations
+        this.saveProjectBtn.addEventListener('click', () => this.saveProject());
+        this.loadProjectBtn.addEventListener('click', () => this.projectInput.click());
+        this.projectInput.addEventListener('change', (e) => this.loadProject(e.target.files[0]));
+        this.clearProjectBtn.addEventListener('click', () => this.clearProject());
         
         // Navigation
         this.prevPageBtn.addEventListener('click', () => this.goToPage(this.currentPage - 1));
@@ -532,43 +544,18 @@ class PDFAnswerSpacer {
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF();
             
+            // Calculate reflowed pages
+            const reflowedPages = await this.calculateReflowedPages();
             let progress = 0;
-            const totalPages = this.totalPages;
+            const totalPages = reflowedPages.length;
             
-            for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+            for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
                 // Update progress
-                progress = (pageNum / totalPages) * 100;
+                progress = ((pageIndex + 1) / totalPages) * 100;
                 progressOverlay.querySelector('.progress-fill').style.width = progress + '%';
                 
-                const page = await this.pdfDocument.getPage(pageNum);
-                const viewport = page.getViewport({ scale: 1.0 });
-                
-                // Create canvas for this page
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d');
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-                
-                // Render PDF page
-                await page.render({
-                    canvasContext: context,
-                    viewport: viewport
-                }).promise;
-                
-                // Add spacers for this page
-                const pageSpacers = this.spacers.get(pageNum) || [];
-                if (pageSpacers.length > 0) {
-                    // This is a simplified approach - in a real implementation,
-                    // you'd need to properly handle the reflow and page breaks
-                    pageSpacers.forEach(spacer => {
-                        this.drawSpacerOnCanvas(context, spacer, viewport.width);
-                    });
-                }
-                
-                // Add page to PDF
-                const imgData = canvas.toDataURL('image/png');
-                if (pageNum > 1) pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, 0, 210, 297); // A4 size
+                const reflowedPage = reflowedPages[pageIndex];
+                await this.renderReflowedPage(pdf, reflowedPage, pageIndex === 0);
             }
             
             // Save the PDF
@@ -581,35 +568,292 @@ class PDFAnswerSpacer {
         }
     }
 
-    drawSpacerOnCanvas(context, spacer, pageWidth) {
+    async calculateReflowedPages() {
+        const reflowedPages = [];
+        const A4_HEIGHT = 842; // A4 height in points (jsPDF units)
+        const A4_WIDTH = 595;  // A4 width in points
+        
+        for (let pageNum = 1; pageNum <= this.totalPages; pageNum++) {
+            const page = await this.pdfDocument.getPage(pageNum);
+            const viewport = page.getViewport({ scale: 1.0 });
+            const pageSpacers = this.spacers.get(pageNum) || [];
+            
+            if (pageSpacers.length === 0) {
+                // No spacers on this page, add as-is
+                reflowedPages.push({
+                    originalPageNum: pageNum,
+                    page: page,
+                    viewport: viewport,
+                    contentSegments: [{
+                        y: 0,
+                        height: viewport.height,
+                        isSpacer: false
+                    }]
+                });
+                continue;
+            }
+            
+            // Sort spacers by Y position
+            const sortedSpacers = [...pageSpacers].sort((a, b) => a.y - b.y);
+            
+            // Create content segments
+            const segments = [];
+            let currentY = 0;
+            let cumulativeOffset = 0;
+            
+            for (let i = 0; i < sortedSpacers.length; i++) {
+                const spacer = sortedSpacers[i];
+                
+                // Add content before spacer
+                if (spacer.y > currentY) {
+                    segments.push({
+                        y: currentY,
+                        height: spacer.y - currentY,
+                        isSpacer: false,
+                        originalY: currentY
+                    });
+                }
+                
+                // Add spacer
+                segments.push({
+                    y: spacer.y + cumulativeOffset,
+                    height: spacer.height,
+                    isSpacer: true,
+                    spacer: spacer,
+                    originalY: spacer.y
+                });
+                
+                currentY = spacer.y;
+                cumulativeOffset += spacer.height;
+            }
+            
+            // Add remaining content after last spacer
+            if (currentY < viewport.height) {
+                segments.push({
+                    y: currentY + cumulativeOffset,
+                    height: viewport.height - currentY,
+                    isSpacer: false,
+                    originalY: currentY
+                });
+            }
+            
+            // Check if content overflows and split into multiple pages
+            const totalHeight = viewport.height + cumulativeOffset;
+            if (totalHeight <= A4_HEIGHT) {
+                // Fits on one page
+                reflowedPages.push({
+                    originalPageNum: pageNum,
+                    page: page,
+                    viewport: viewport,
+                    contentSegments: segments,
+                    totalHeight: totalHeight
+                });
+            } else {
+                // Need to split into multiple pages
+                const pages = this.splitPageIntoMultiple(segments, A4_HEIGHT, pageNum, page, viewport);
+                reflowedPages.push(...pages);
+            }
+        }
+        
+        return reflowedPages;
+    }
+
+    splitPageIntoMultiple(segments, maxHeight, originalPageNum, page, viewport) {
+        const pages = [];
+        let currentPageY = 0;
+        let currentPageSegments = [];
+        let pageIndex = 0;
+        
+        for (const segment of segments) {
+            if (currentPageY + segment.height > maxHeight && currentPageSegments.length > 0) {
+                // Current page is full, start a new one
+                pages.push({
+                    originalPageNum: originalPageNum,
+                    pageIndex: pageIndex,
+                    page: page,
+                    viewport: viewport,
+                    contentSegments: currentPageSegments,
+                    totalHeight: currentPageY
+                });
+                
+                currentPageSegments = [];
+                currentPageY = 0;
+                pageIndex++;
+            }
+            
+            // Adjust segment Y for current page
+            const adjustedSegment = {
+                ...segment,
+                y: currentPageY
+            };
+            
+            currentPageSegments.push(adjustedSegment);
+            currentPageY += segment.height;
+        }
+        
+        // Add the last page if it has content
+        if (currentPageSegments.length > 0) {
+            pages.push({
+                originalPageNum: originalPageNum,
+                pageIndex: pageIndex,
+                page: page,
+                viewport: viewport,
+                contentSegments: currentPageSegments,
+                totalHeight: currentPageY
+            });
+        }
+        
+        return pages;
+    }
+
+    async renderReflowedPage(pdf, reflowedPage, isFirstPage) {
+        const { jsPDF } = window.jspdf;
+        const A4_WIDTH = 595;
+        const A4_HEIGHT = 842;
+        
+        if (!isFirstPage) {
+            pdf.addPage();
+        }
+        
+        // Create a canvas for the full page
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.width = A4_WIDTH;
+        canvas.height = A4_HEIGHT;
+        
+        // Fill with white background
+        context.fillStyle = 'white';
+        context.fillRect(0, 0, A4_WIDTH, A4_HEIGHT);
+        
+        // Render each segment
+        for (const segment of reflowedPage.contentSegments) {
+            if (segment.isSpacer) {
+                // Draw spacer
+                this.drawSpacerOnCanvas(context, segment.spacer, A4_WIDTH, segment.y, segment.height);
+            } else {
+                // Draw original content segment
+                await this.drawContentSegment(context, reflowedPage.page, reflowedPage.viewport, segment, A4_WIDTH, A4_HEIGHT);
+            }
+        }
+        
+        // Add to PDF
+        const imgData = canvas.toDataURL('image/png');
+        pdf.addImage(imgData, 'PNG', 0, 0, A4_WIDTH, A4_HEIGHT);
+    }
+
+    async drawContentSegment(context, page, viewport, segment, targetWidth, targetHeight) {
+        // Create a temporary canvas for the original content
+        const tempCanvas = document.createElement('canvas');
+        const tempContext = tempCanvas.getContext('2d');
+        tempCanvas.width = viewport.width;
+        tempCanvas.height = viewport.height;
+        
+        // Render the original page
+        await page.render({
+            canvasContext: tempContext,
+            viewport: viewport
+        }).promise;
+        
+        // Calculate scaling
+        const scaleX = targetWidth / viewport.width;
+        const scaleY = targetHeight / viewport.height;
+        const scale = Math.min(scaleX, scaleY);
+        
+        // Draw the segment to the main canvas
+        const sourceY = segment.originalY;
+        const sourceHeight = segment.height;
+        const destX = (targetWidth - viewport.width * scale) / 2;
+        const destY = segment.y;
+        const destWidth = viewport.width * scale;
+        const destHeight = sourceHeight * scale;
+        
+        context.drawImage(
+            tempCanvas,
+            0, sourceY, viewport.width, sourceHeight,
+            destX, destY, destWidth, destHeight
+        );
+    }
+
+    drawSpacerOnCanvas(context, spacer, pageWidth, y = spacer.y, height = spacer.height) {
         context.save();
         
         // Draw spacer background
         context.fillStyle = 'white';
-        context.fillRect(0, spacer.y, pageWidth, spacer.height);
+        context.fillRect(0, y, pageWidth, height);
         
         // Draw spacer style
         if (spacer.style === 'ruled') {
             context.strokeStyle = '#ddd';
             context.lineWidth = 1;
-            for (let y = spacer.y; y < spacer.y + spacer.height; y += spacer.ruleSpacing) {
+            for (let ruleY = y; ruleY < y + height; ruleY += spacer.ruleSpacing) {
                 context.beginPath();
-                context.moveTo(0, y);
-                context.lineTo(pageWidth, y);
+                context.moveTo(0, ruleY);
+                context.lineTo(pageWidth, ruleY);
                 context.stroke();
             }
         } else if (spacer.style === 'dot-grid') {
             context.fillStyle = '#ddd';
             for (let x = 0; x < pageWidth; x += spacer.dotPitch) {
-                for (let y = spacer.y; y < spacer.y + spacer.height; y += spacer.dotPitch) {
+                for (let dotY = y; dotY < y + height; dotY += spacer.dotPitch) {
                     context.beginPath();
-                    context.arc(x, y, 1, 0, Math.PI * 2);
+                    context.arc(x, dotY, 1, 0, Math.PI * 2);
                     context.fill();
                 }
             }
         }
         
         context.restore();
+    }
+
+    startDragSpacer(spacerId, e) {
+        this.draggingSpacer = spacerId;
+        this.dragStartY = e.clientY;
+        this.dragStartSpacerY = this.getSpacerProperty(spacerId, 'y');
+        
+        document.addEventListener('mousemove', this.handleSpacerDrag);
+        document.addEventListener('mouseup', this.stopDragSpacer);
+        e.preventDefault();
+    }
+
+    handleSpacerDrag = (e) => {
+        if (!this.draggingSpacer) return;
+        
+        const deltaY = e.clientY - this.dragStartY;
+        const newY = Math.max(0, this.dragStartSpacerY + deltaY);
+        
+        this.updateSpacerProperty(this.draggingSpacer, 'y', newY);
+    }
+
+    stopDragSpacer = () => {
+        this.draggingSpacer = null;
+        document.removeEventListener('mousemove', this.handleSpacerDrag);
+        document.removeEventListener('mouseup', this.stopDragSpacer);
+    }
+
+    startResizeSpacer(spacerId, e) {
+        this.resizingSpacer = spacerId;
+        this.resizeStartY = e.clientY;
+        this.resizeStartHeight = this.getSpacerProperty(spacerId, 'height');
+        
+        document.addEventListener('mousemove', this.handleSpacerResize);
+        document.addEventListener('mouseup', this.stopResizeSpacer);
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    handleSpacerResize = (e) => {
+        if (!this.resizingSpacer) return;
+        
+        const deltaY = e.clientY - this.resizeStartY;
+        const newHeight = Math.max(20, this.resizeStartHeight + deltaY);
+        
+        this.updateSpacerProperty(this.resizingSpacer, 'height', newHeight);
+    }
+
+    stopResizeSpacer = () => {
+        this.resizingSpacer = null;
+        document.removeEventListener('mousemove', this.handleSpacerResize);
+        document.removeEventListener('mouseup', this.stopResizeSpacer);
     }
 
     saveSettings() {
@@ -633,6 +877,98 @@ class PDFAnswerSpacer {
                 console.warn('Failed to load settings:', error);
             }
         }
+    }
+
+    saveProject() {
+        if (!this.pdfDocument) {
+            this.showError('Please load a PDF first');
+            return;
+        }
+
+        const project = {
+            spacers: Object.fromEntries(this.spacers),
+            scale: this.scale,
+            currentPage: this.currentPage,
+            pdfName: this.pdfDocument.fingerprints?.[0] || 'unknown',
+            timestamp: new Date().toISOString()
+        };
+
+        const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'pdf-spacer-project.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    async loadProject(file) {
+        if (!file) return;
+
+        try {
+            const text = await file.text();
+            const project = JSON.parse(text);
+            
+            if (!project.spacers) {
+                throw new Error('Invalid project file format');
+            }
+
+            // Clear current spacers and load project data
+            this.spacers = new Map(Object.entries(project.spacers));
+            this.scale = project.scale || 1.0;
+            this.currentPage = project.currentPage || 1;
+
+            // Re-render if PDF is loaded
+            if (this.pdfDocument) {
+                await this.renderCurrentPage();
+                this.updateUI();
+            }
+
+            this.saveSettings();
+            this.showSuccess('Project loaded successfully');
+
+        } catch (error) {
+            this.showError('Failed to load project: ' + error.message);
+        }
+    }
+
+    clearProject() {
+        if (confirm('Are you sure you want to clear all spacers? This action cannot be undone.')) {
+            this.spacers.clear();
+            this.selectedSpacer = null;
+            this.updateSpacerProperties();
+            
+            if (this.pdfDocument) {
+                this.renderCurrentPage();
+            }
+            
+            this.saveSettings();
+        }
+    }
+
+    showSuccess(message) {
+        // Simple success notification - in a real app you'd want a proper toast
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #27ae60;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 4000;
+            font-size: 14px;
+        `;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 3000);
     }
 }
 

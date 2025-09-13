@@ -14,8 +14,17 @@
                 <h1>PDF Answer Spacer</h1>
                 <div class="file-controls">
                     <input type="file" id="pdfInput" accept=".pdf" style="display: none;">
+                    <input type="file" id="projectInput" accept=".json" style="display: none;">
                     <button id="loadPdfBtn" class="btn btn-primary">Load PDF</button>
                     <button id="exportPdfBtn" class="btn btn-secondary" disabled>Export PDF</button>
+                    <div class="dropdown">
+                        <button id="projectMenuBtn" class="btn btn-icon" title="Project">📁</button>
+                        <div id="projectMenu" class="dropdown-content">
+                            <button id="saveProjectBtn" class="dropdown-item">Save Project</button>
+                            <button id="loadProjectBtn" class="dropdown-item">Load Project</button>
+                            <button id="clearProjectBtn" class="dropdown-item">Clear All</button>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="header-right">
