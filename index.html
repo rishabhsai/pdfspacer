@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Answer Spacer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <h1>PDF Answer Spacer</h1>
+                <div class="file-controls">
+                    <input type="file" id="pdfInput" accept=".pdf" style="display: none;">
+                    <button id="loadPdfBtn" class="btn btn-primary">Load PDF</button>
+                    <button id="exportPdfBtn" class="btn btn-secondary" disabled>Export PDF</button>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="zoom-controls">
+                    <button id="zoomOutBtn" class="btn btn-icon" title="Zoom Out">−</button>
+                    <span id="zoomLevel">100%</span>
+                    <button id="zoomInBtn" class="btn btn-icon" title="Zoom In">+</button>
+                    <button id="fitWidthBtn" class="btn btn-icon" title="Fit Width">⤢</button>
+                </div>
+                <div class="page-controls">
+                    <button id="prevPageBtn" class="btn btn-icon" disabled>‹</button>
+                    <span id="pageInfo">Page 1 of 1</span>
+                    <button id="nextPageBtn" class="btn btn-icon" disabled>›</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="sidebar-section">
+                    <h3>Tools</h3>
+                    <div class="tool-buttons">
+                        <button id="addSpaceBtn" class="btn btn-tool active" title="Add Space">📏</button>
+                        <button id="selectBtn" class="btn btn-tool" title="Select">↖</button>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>Spacer Properties</h3>
+                    <div id="spacerProperties" class="properties-panel">
+                        <p class="no-selection">Select a spacer to edit properties</p>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>Pages</h3>
+                    <div id="thumbnails" class="thumbnails-container">
+                        <p class="no-content">Load a PDF to see thumbnails</p>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- PDF Viewer -->
+            <main class="viewer-container">
+                <div id="pdfViewer" class="pdf-viewer">
+                    <div class="loading" id="loadingIndicator">
+                        <div class="spinner"></div>
+                        <p>Loading PDF...</p>
+                    </div>
+                    <div class="no-content" id="noContentMessage">
+                        <div class="no-content-icon">📄</div>
+                        <h2>Welcome to PDF Answer Spacer</h2>
+                        <p>Load a PDF to start adding answer spaces between content</p>
+                        <button id="loadPdfBtnMain" class="btn btn-primary">Choose PDF File</button>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Spacer Preview Overlay -->
+        <div id="spacerPreview" class="spacer-preview" style="display: none;"></div>
+
+        <!-- Context Menu -->
+        <div id="contextMenu" class="context-menu" style="display: none;">
+            <div class="context-item" data-action="edit">Edit Spacer</div>
+            <div class="context-item" data-action="delete">Delete Spacer</div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
