@@ -41,7 +41,7 @@ class PDFAnswerSpacer {
         
         // Tools
         this.addSpaceBtn = document.getElementById('addSpaceBtn');
-        this.selectBtn = document.getElementById('selectBtn');
+        this.panBtn = document.getElementById('panBtn');
         
         // Viewer
         this.pdfViewer = document.getElementById('pdfViewer');
@@ -79,7 +79,7 @@ class PDFAnswerSpacer {
         
         // Tools
         this.addSpaceBtn.addEventListener('click', () => this.setTool('addSpace'));
-        this.selectBtn.addEventListener('click', () => this.setTool('select'));
+        this.panBtn.addEventListener('click', () => this.setTool('pan'));
         
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => this.handleKeydown(e));
@@ -243,6 +243,8 @@ class PDFAnswerSpacer {
                 spacerElement.style.setProperty('--rule-spacing', spacer.ruleSpacing + 'px');
             } else if (spacer.style === 'dot-grid') {
                 spacerElement.style.setProperty('--dot-pitch', spacer.dotPitch + 'px');
+            } else if (spacer.style === 'squared') {
+                spacerElement.style.setProperty('--grid-size', spacer.gridSize + 'px');
             }
             
             // Add resize handle
@@ -370,7 +372,8 @@ class PDFAnswerSpacer {
             height: 100,
             style: 'plain',
             ruleSpacing: 20,
-            dotPitch: 10
+            dotPitch: 10,
+            gridSize: 20
         };
         
         this.addSpacerToPage(this.currentPage, spacer);
@@ -480,6 +483,7 @@ class PDFAnswerSpacer {
                     <option value="plain" ${spacer.style === 'plain' ? 'selected' : ''}>Plain</option>
                     <option value="ruled" ${spacer.style === 'ruled' ? 'selected' : ''}>Ruled</option>
                     <option value="dot-grid" ${spacer.style === 'dot-grid' ? 'selected' : ''}>Dot Grid</option>
+                    <option value="squared" ${spacer.style === 'squared' ? 'selected' : ''}>Squared Paper</option>
                 </select>
             </div>
             <div class="property-group">
@@ -496,6 +500,12 @@ class PDFAnswerSpacer {
                 <div class="property-group">
                     <label class="property-label">Dot Pitch (px)</label>
                     <input type="number" class="property-input" data-property="dotPitch" value="${spacer.dotPitch}" min="5" max="30">
+                </div>
+            ` : ''}
+            ${spacer.style === 'squared' ? `
+                <div class="property-group">
+                    <label class="property-label">Grid Size (px)</label>
+                    <input type="number" class="property-input" data-property="gridSize" value="${spacer.gridSize}" min="10" max="40">
                 </div>
             ` : ''}
             <div class="property-group">
@@ -538,8 +548,10 @@ class PDFAnswerSpacer {
         if (tool === 'addSpace') {
             this.addSpaceBtn.classList.add('active');
             document.body.style.cursor = 'crosshair';
+        } else if (tool === 'pan') {
+            this.panBtn.classList.add('active');
+            document.body.style.cursor = 'grab';
         } else {
-            this.selectBtn.classList.add('active');
             document.body.style.cursor = 'default';
         }
     }
@@ -916,11 +928,15 @@ class PDFAnswerSpacer {
             pdf.addPage();
         }
         
-        // Create a canvas for the full page
+        // Create a high-resolution canvas for better quality
+        const scale = 2; // Higher resolution
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
-        canvas.width = A4_WIDTH;
-        canvas.height = A4_HEIGHT;
+        canvas.width = A4_WIDTH * scale;
+        canvas.height = A4_HEIGHT * scale;
+        
+        // Scale the context for high resolution
+        context.scale(scale, scale);
         
         // Fill with white background
         context.fillStyle = 'white';
@@ -929,7 +945,7 @@ class PDFAnswerSpacer {
         // Render each segment
         for (const segment of reflowedPage.contentSegments) {
             if (segment.isSpacer) {
-                // Draw spacer
+                // Draw spacer with proper scaling
                 this.drawSpacerOnCanvas(context, segment.spacer, A4_WIDTH, segment.y, segment.height);
             } else {
                 // Draw original content segment
@@ -937,40 +953,45 @@ class PDFAnswerSpacer {
             }
         }
         
-        // Add to PDF
-        const imgData = canvas.toDataURL('image/png');
-        pdf.addImage(imgData, 'PNG', 0, 0, A4_WIDTH, A4_HEIGHT);
+        // Add to PDF with high quality
+        const imgData = canvas.toDataURL('image/jpeg', 0.95); // Use JPEG for better compression
+        pdf.addImage(imgData, 'JPEG', 0, 0, A4_WIDTH, A4_HEIGHT);
     }
 
     async drawContentSegment(context, page, viewport, segment, targetWidth, targetHeight) {
-        // Create a temporary canvas for the original content
+        // Create a high-resolution temporary canvas for the original content
+        const scale = 2; // Higher resolution
         const tempCanvas = document.createElement('canvas');
         const tempContext = tempCanvas.getContext('2d');
-        tempCanvas.width = viewport.width;
-        tempCanvas.height = viewport.height;
+        tempCanvas.width = viewport.width * scale;
+        tempCanvas.height = viewport.height * scale;
         
-        // Render the original page
+        // Scale the context for high resolution
+        tempContext.scale(scale, scale);
+        
+        // Render the full page at high resolution
+        const highResViewport = page.getViewport({ scale: viewport.scale * scale });
         await page.render({
             canvasContext: tempContext,
-            viewport: viewport
+            viewport: highResViewport
         }).promise;
         
-        // Calculate scaling
+        // Calculate scaling to fit target dimensions
         const scaleX = targetWidth / viewport.width;
         const scaleY = targetHeight / viewport.height;
-        const scale = Math.min(scaleX, scaleY);
+        const finalScale = Math.min(scaleX, scaleY);
         
         // Draw the segment to the main canvas
         const sourceY = segment.originalY;
         const sourceHeight = segment.height;
-        const destX = (targetWidth - viewport.width * scale) / 2;
+        const destX = (targetWidth - viewport.width * finalScale) / 2;
         const destY = segment.y;
-        const destWidth = viewport.width * scale;
-        const destHeight = sourceHeight * scale;
+        const destWidth = viewport.width * finalScale;
+        const destHeight = sourceHeight * finalScale;
         
         context.drawImage(
             tempCanvas,
-            0, sourceY, viewport.width, sourceHeight,
+            0, sourceY * scale, viewport.width * scale, sourceHeight * scale,
             destX, destY, destWidth, destHeight
         );
     }
@@ -1000,6 +1021,23 @@ class PDFAnswerSpacer {
                     context.arc(x, dotY, 1, 0, Math.PI * 2);
                     context.fill();
                 }
+            }
+        } else if (spacer.style === 'squared') {
+            context.strokeStyle = '#ddd';
+            context.lineWidth = 1;
+            // Draw vertical lines
+            for (let x = 0; x < pageWidth; x += spacer.gridSize) {
+                context.beginPath();
+                context.moveTo(x, y);
+                context.lineTo(x, y + height);
+                context.stroke();
+            }
+            // Draw horizontal lines
+            for (let gridY = y; gridY < y + height; gridY += spacer.gridSize) {
+                context.beginPath();
+                context.moveTo(0, gridY);
+                context.lineTo(pageWidth, gridY);
+                context.stroke();
             }
         }
         
@@ -1048,6 +1086,7 @@ class PDFAnswerSpacer {
         const deltaY = e.clientY - this.resizeStartY;
         const newHeight = Math.max(20, this.resizeStartHeight + deltaY);
         
+        // Update the spacer property and re-render the page
         this.updateSpacerProperty(this.resizingSpacer, 'height', newHeight);
     }
 

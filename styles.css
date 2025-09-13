@@ -418,6 +418,13 @@ h1 {
     background-size: var(--dot-pitch) var(--dot-pitch);
 }
 
+.spacer.squared {
+    background: 
+        linear-gradient(to right, #ddd 1px, transparent 1px),
+        linear-gradient(to bottom, #ddd 1px, transparent 1px);
+    background-size: var(--grid-size) var(--grid-size);
+}
+
 .spacer-handle {
     position: absolute;
     top: -6px;
