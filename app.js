@@ -141,43 +141,15 @@ class PDFAnswerSpacer {
             loadingIndicator.innerHTML = '<div class="spinner"></div><p>Loading PDF...</p>';
             this.pdfViewer.appendChild(loadingIndicator);
             
-            // Create canvas
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-            
-            // Render PDF page
-            await page.render({
-                canvasContext: context,
-                viewport: viewport
-            }).promise;
-            
-            // Create page container
-            const pageContainer = document.createElement('div');
-            pageContainer.className = 'pdf-page';
-            pageContainer.style.width = viewport.width + 'px';
-            pageContainer.style.height = viewport.height + 'px';
-            pageContainer.dataset.pageNumber = this.currentPage;
-            
-            // Add canvas to page
-            pageContainer.appendChild(canvas);
-            
-            // Add spacers for this page
+            // Get spacers for this page
             const pageSpacers = this.spacers.get(this.currentPage) || [];
-            pageSpacers.forEach((spacer, index) => {
-                this.renderSpacer(pageContainer, spacer, index);
-            });
             
-            // Add click handler for spacer placement
-            pageContainer.addEventListener('click', (e) => this.handlePageClick(e));
-            pageContainer.addEventListener('contextmenu', (e) => this.handlePageContextMenu(e));
-            
-            // Replace loading with page safely
-            if (loadingIndicator.parentNode === this.pdfViewer) {
-                this.pdfViewer.replaceChild(pageContainer, loadingIndicator);
+            if (pageSpacers.length === 0) {
+                // No spacers - render normally
+                await this.renderPageWithoutSpacers(page, viewport, loadingIndicator);
             } else {
-                this.pdfViewer.appendChild(pageContainer);
+                // Has spacers - render with reflow
+                await this.renderPageWithSpacers(page, viewport, pageSpacers, loadingIndicator);
             }
             
         } catch (error) {
@@ -187,62 +159,214 @@ class PDFAnswerSpacer {
         }
     }
 
-    renderSpacer(pageContainer, spacer, index) {
-        const spacerElement = document.createElement('div');
-        spacerElement.className = `spacer ${spacer.style}`;
-        spacerElement.dataset.spacerId = spacer.id;
-        spacerElement.dataset.spacerIndex = index;
+    async renderPageWithoutSpacers(page, viewport, loadingIndicator) {
+        // Create canvas
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
         
-        // Set position and size
-        spacerElement.style.top = spacer.y + 'px';
-        spacerElement.style.height = spacer.height + 'px';
+        // Render PDF page
+        await page.render({
+            canvasContext: context,
+            viewport: viewport
+        }).promise;
         
-        // Set CSS custom properties for styles
-        if (spacer.style === 'ruled') {
-            spacerElement.style.setProperty('--rule-spacing', spacer.ruleSpacing + 'px');
-        } else if (spacer.style === 'dot-grid') {
-            spacerElement.style.setProperty('--dot-pitch', spacer.dotPitch + 'px');
+        // Create page container
+        const pageContainer = document.createElement('div');
+        pageContainer.className = 'pdf-page';
+        pageContainer.style.width = viewport.width + 'px';
+        pageContainer.style.height = viewport.height + 'px';
+        pageContainer.dataset.pageNumber = this.currentPage;
+        
+        // Add canvas to page
+        pageContainer.appendChild(canvas);
+        
+        // Add click handler for spacer placement
+        pageContainer.addEventListener('click', (e) => this.handlePageClick(e));
+        pageContainer.addEventListener('contextmenu', (e) => this.handlePageContextMenu(e));
+        
+        // Replace loading with page safely
+        if (loadingIndicator.parentNode === this.pdfViewer) {
+            this.pdfViewer.replaceChild(pageContainer, loadingIndicator);
+        } else {
+            this.pdfViewer.appendChild(pageContainer);
+        }
+    }
+
+    async renderPageWithSpacers(page, viewport, pageSpacers, loadingIndicator) {
+        // Sort spacers by Y position
+        const sortedSpacers = [...pageSpacers].sort((a, b) => a.y - b.y);
+        
+        // Create a container for the reflowed content
+        const pageContainer = document.createElement('div');
+        pageContainer.className = 'pdf-page reflowed';
+        pageContainer.style.width = viewport.width + 'px';
+        pageContainer.dataset.pageNumber = this.currentPage;
+        
+        let currentY = 0;
+        let cumulativeOffset = 0;
+        
+        // Process each segment of content
+        for (let i = 0; i < sortedSpacers.length; i++) {
+            const spacer = sortedSpacers[i];
+            
+            // Add content before spacer
+            if (spacer.y > currentY) {
+                const contentHeight = spacer.y - currentY;
+                const contentCanvas = await this.createContentCanvas(page, viewport, currentY, contentHeight);
+                
+                const contentElement = document.createElement('div');
+                contentElement.className = 'content-segment';
+                contentElement.style.position = 'absolute';
+                contentElement.style.left = '0';
+                contentElement.style.top = (currentY + cumulativeOffset) + 'px';
+                contentElement.style.width = viewport.width + 'px';
+                contentElement.style.height = contentHeight + 'px';
+                contentElement.appendChild(contentCanvas);
+                
+                pageContainer.appendChild(contentElement);
+            }
+            
+            // Add spacer
+            const spacerElement = document.createElement('div');
+            spacerElement.className = `spacer ${spacer.style}`;
+            spacerElement.dataset.spacerId = spacer.id;
+            spacerElement.style.position = 'absolute';
+            spacerElement.style.left = '0';
+            spacerElement.style.top = (spacer.y + cumulativeOffset) + 'px';
+            spacerElement.style.width = viewport.width + 'px';
+            spacerElement.style.height = spacer.height + 'px';
+            
+            // Set CSS custom properties for styles
+            if (spacer.style === 'ruled') {
+                spacerElement.style.setProperty('--rule-spacing', spacer.ruleSpacing + 'px');
+            } else if (spacer.style === 'dot-grid') {
+                spacerElement.style.setProperty('--dot-pitch', spacer.dotPitch + 'px');
+            }
+            
+            // Add resize handle
+            const handle = document.createElement('div');
+            handle.className = 'spacer-handle';
+            spacerElement.appendChild(handle);
+            
+            // Add label
+            const label = document.createElement('div');
+            label.className = 'spacer-label';
+            label.textContent = `${spacer.height}px`;
+            spacerElement.appendChild(label);
+            
+            // Add event listeners
+            spacerElement.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.selectSpacer(spacer.id);
+            });
+            
+            spacerElement.addEventListener('mousedown', (e) => {
+                if (e.target.classList.contains('spacer-handle')) {
+                    this.startResizeSpacer(spacer.id, e);
+                } else {
+                    this.startDragSpacer(spacer.id, e);
+                }
+            });
+            
+            pageContainer.appendChild(spacerElement);
+            
+            currentY = spacer.y;
+            cumulativeOffset += spacer.height;
         }
         
-        // Add resize handle
-        const handle = document.createElement('div');
-        handle.className = 'spacer-handle';
-        spacerElement.appendChild(handle);
+        // Add remaining content after last spacer
+        if (currentY < viewport.height) {
+            const remainingHeight = viewport.height - currentY;
+            const contentCanvas = await this.createContentCanvas(page, viewport, currentY, remainingHeight);
+            
+            const contentElement = document.createElement('div');
+            contentElement.className = 'content-segment';
+            contentElement.style.position = 'absolute';
+            contentElement.style.left = '0';
+            contentElement.style.top = (currentY + cumulativeOffset) + 'px';
+            contentElement.style.width = viewport.width + 'px';
+            contentElement.style.height = remainingHeight + 'px';
+            contentElement.appendChild(contentCanvas);
+            
+            pageContainer.appendChild(contentElement);
+        }
         
-        // Add label
-        const label = document.createElement('div');
-        label.className = 'spacer-label';
-        label.textContent = `${spacer.height}px`;
-        spacerElement.appendChild(label);
+        // Set container height based on total content
+        const totalHeight = viewport.height + cumulativeOffset;
+        pageContainer.style.height = totalHeight + 'px';
         
-        // Add event listeners
-        spacerElement.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.selectSpacer(spacer.id);
-        });
+        // Add click handler for spacer placement
+        pageContainer.addEventListener('click', (e) => this.handlePageClick(e));
+        pageContainer.addEventListener('contextmenu', (e) => this.handlePageContextMenu(e));
         
-        spacerElement.addEventListener('mousedown', (e) => {
-            if (e.target.classList.contains('spacer-handle')) {
-                this.startResizeSpacer(spacer.id, e);
-            } else {
-                this.startDragSpacer(spacer.id, e);
-            }
-        });
-        
-        pageContainer.appendChild(spacerElement);
+        // Replace loading with page safely
+        if (loadingIndicator.parentNode === this.pdfViewer) {
+            this.pdfViewer.replaceChild(pageContainer, loadingIndicator);
+        } else {
+            this.pdfViewer.appendChild(pageContainer);
+        }
     }
+
+    async createContentCanvas(page, viewport, startY, height) {
+        // Create a temporary canvas for the full page
+        const tempCanvas = document.createElement('canvas');
+        const tempContext = tempCanvas.getContext('2d');
+        tempCanvas.width = viewport.width;
+        tempCanvas.height = viewport.height;
+        
+        // Render the full page
+        await page.render({
+            canvasContext: tempContext,
+            viewport: viewport
+        }).promise;
+        
+        // Create the segment canvas
+        const segmentCanvas = document.createElement('canvas');
+        const segmentContext = segmentCanvas.getContext('2d');
+        segmentCanvas.width = viewport.width;
+        segmentCanvas.height = height;
+        
+        // Draw only the segment we need
+        segmentContext.drawImage(
+            tempCanvas,
+            0, startY, viewport.width, height,
+            0, 0, viewport.width, height
+        );
+        
+        return segmentCanvas;
+    }
+
 
     handlePageClick(e) {
         if (this.currentTool !== 'addSpace') return;
         
         const pageContainer = e.currentTarget;
         const rect = pageContainer.getBoundingClientRect();
-        const y = e.clientY - rect.top;
+        const clickY = e.clientY - rect.top;
         
-        // Create new spacer
+        // Calculate the original Y position (accounting for any existing spacers above)
+        const pageSpacers = this.spacers.get(this.currentPage) || [];
+        const sortedSpacers = [...pageSpacers].sort((a, b) => a.y - b.y);
+        
+        let originalY = clickY;
+        let cumulativeOffset = 0;
+        
+        // Subtract the cumulative offset from spacers above this click point
+        for (const spacer of sortedSpacers) {
+            if (spacer.y + cumulativeOffset < clickY) {
+                cumulativeOffset += spacer.height;
+                originalY = clickY - cumulativeOffset;
+            } else {
+                break;
+            }
+        }
+        
+        // Create new spacer at the original Y position
         const spacer = {
             id: Date.now().toString(),
-            y: y,
+            y: Math.max(0, originalY),
             height: 100,
             style: 'plain',
             ruleSpacing: 20,

@@ -318,6 +318,21 @@ h1 {
     border-radius: 4px;
 }
 
+/* Reflowed page styles */
+.pdf-page.reflowed {
+    position: relative;
+}
+
+.content-segment {
+    position: absolute;
+    left: 0;
+}
+
+.content-segment canvas {
+    display: block;
+    border-radius: 0;
+}
+
 /* Loading and no content states */
 .loading {
     display: flex;
