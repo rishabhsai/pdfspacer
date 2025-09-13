@@ -97,6 +97,11 @@ class PDFAnswerSpacer {
         this.showLoading(true);
         try {
             const arrayBuffer = await file.arrayBuffer();
+            
+            // Clear existing content first
+            this.pdfViewer.innerHTML = '';
+            this.thumbnails.innerHTML = '<p class="no-content">Loading thumbnails...</p>';
+            
             this.pdfDocument = await pdfjsLib.getDocument(arrayBuffer).promise;
             this.totalPages = this.pdfDocument.numPages;
             this.currentPage = 1;
@@ -105,10 +110,14 @@ class PDFAnswerSpacer {
             
             await this.renderCurrentPage();
             this.updateUI();
-            this.generateThumbnails();
+            await this.generateThumbnails();
             this.saveSettings();
+            
         } catch (error) {
+            console.error('PDF loading error:', error);
             this.showError('Failed to load PDF: ' + error.message);
+            this.pdfViewer.innerHTML = '';
+            this.noContentMessage.style.display = 'flex';
         } finally {
             this.showLoading(false);
         }
@@ -122,13 +131,15 @@ class PDFAnswerSpacer {
             const page = await this.pdfDocument.getPage(this.currentPage);
             const viewport = page.getViewport({ scale: this.scale });
             
-            // Clear existing content
+            // Clear existing content safely
             this.pdfViewer.innerHTML = '';
-            this.loadingIndicator = document.createElement('div');
-            this.loadingIndicator.id = 'loadingIndicator';
-            this.loadingIndicator.className = 'loading';
-            this.loadingIndicator.innerHTML = '<div class="spinner"></div><p>Loading PDF...</p>';
-            this.pdfViewer.appendChild(this.loadingIndicator);
+            
+            // Create loading indicator
+            const loadingIndicator = document.createElement('div');
+            loadingIndicator.id = 'loadingIndicator';
+            loadingIndicator.className = 'loading';
+            loadingIndicator.innerHTML = '<div class="spinner"></div><p>Loading PDF...</p>';
+            this.pdfViewer.appendChild(loadingIndicator);
             
             // Create canvas
             const canvas = document.createElement('canvas');
@@ -162,8 +173,12 @@ class PDFAnswerSpacer {
             pageContainer.addEventListener('click', (e) => this.handlePageClick(e));
             pageContainer.addEventListener('contextmenu', (e) => this.handlePageContextMenu(e));
             
-            // Replace loading with page
-            this.pdfViewer.replaceChild(pageContainer, this.loadingIndicator);
+            // Replace loading with page safely
+            if (loadingIndicator.parentNode === this.pdfViewer) {
+                this.pdfViewer.replaceChild(pageContainer, loadingIndicator);
+            } else {
+                this.pdfViewer.appendChild(pageContainer);
+            }
             
         } catch (error) {
             this.showError('Failed to render page: ' + error.message);
@@ -509,12 +524,74 @@ class PDFAnswerSpacer {
     }
 
     showLoading(show) {
-        this.loadingIndicator.style.display = show ? 'flex' : 'none';
-        this.noContentMessage.style.display = show ? 'none' : (this.pdfDocument ? 'none' : 'flex');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const noContentMessage = document.getElementById('noContentMessage');
+        
+        if (loadingIndicator) {
+            loadingIndicator.style.display = show ? 'flex' : 'none';
+        }
+        if (noContentMessage) {
+            noContentMessage.style.display = show ? 'none' : (this.pdfDocument ? 'none' : 'flex');
+        }
     }
 
     showError(message) {
-        alert(message); // In a real app, you'd want a proper error dialog
+        // Create a proper error dialog instead of alert
+        const errorDialog = document.createElement('div');
+        errorDialog.className = 'error-dialog';
+        errorDialog.innerHTML = `
+            <div class="error-content">
+                <h3>Error</h3>
+                <p>${message}</p>
+                <button class="btn btn-primary" onclick="this.parentElement.parentElement.remove()">OK</button>
+            </div>
+        `;
+        
+        // Add error dialog styles if not already present
+        if (!document.getElementById('error-dialog-styles')) {
+            const style = document.createElement('style');
+            style.id = 'error-dialog-styles';
+            style.textContent = `
+                .error-dialog {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0,0,0,0.5);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 5000;
+                }
+                .error-content {
+                    background: white;
+                    padding: 30px;
+                    border-radius: 8px;
+                    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+                    max-width: 400px;
+                    text-align: center;
+                }
+                .error-content h3 {
+                    color: #e74c3c;
+                    margin-bottom: 15px;
+                }
+                .error-content p {
+                    margin-bottom: 20px;
+                    color: #2c3e50;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(errorDialog);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (errorDialog.parentNode) {
+                errorDialog.remove();
+            }
+        }, 5000);
     }
 
     handleResize() {
