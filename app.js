@@ -848,30 +848,105 @@ class PDFAnswerSpacer {
             
             const pageSpacers = this.spacers.get(pageNum) || [];
             
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            // Match canvas pixels to PDF page in points for 1:1 mapping
-            // Optionally scale up for crisper output; keep 1x for now
-            canvas.width = Math.floor(pageWidth);
-            canvas.height = Math.floor(pageHeight);
-            
-            // Fill with white background
-            context.fillStyle = 'white';
-            context.fillRect(0, 0, canvas.width, canvas.height);
+            // Render at higher resolution for crispness
+            const DPR = 2; // can be tuned or tied to devicePixelRatio
             
             if (pageSpacers.length === 0) {
-                // No spacers - just render the page
+                // Simple path: render one full page at 2x and add
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.width = Math.floor(pageWidth * DPR);
+                canvas.height = Math.floor(pageHeight * DPR);
+                context.fillStyle = 'white';
+                context.fillRect(0, 0, canvas.width, canvas.height);
                 await this.renderSimplePage(context, page, viewport, canvas.width, canvas.height);
-            } else {
-                // Has spacers - render with spacers
-                await this.renderPageWithSpacersSimple(context, page, viewport, pageSpacers, canvas.width, canvas.height);
+                if (!isFirstPage) pdf.addPage();
+                const img = canvas.toDataURL('image/png');
+                pdf.addImage(img, 'PNG', 0, 0, pageWidth, pageHeight);
+                return;
             }
+
+            // Reflow path: build a tall canvas at pageWidth, then slice into pages
+            const sortedSpacers = [...pageSpacers].sort((a, b) => a.y - b.y);
+            const scaleToWidth = (pageWidth * DPR) / viewport.width; // pixels per PDF unit
+            const tallWidth = Math.floor(pageWidth * DPR);
+            let totalHeightUnits = viewport.height;
+            for (const s of sortedSpacers) totalHeightUnits += s.height;
+            const tallHeight = Math.ceil(totalHeightUnits * scaleToWidth);
+
+            // Render full original page once
+            const tempCanvas = document.createElement('canvas');
+            const tempContext = tempCanvas.getContext('2d');
+            tempCanvas.width = viewport.width;
+            tempCanvas.height = viewport.height;
+            await page.render({ canvasContext: tempContext, viewport }).promise;
+
+            // Compose tall canvas with reflow
+            const tallCanvas = document.createElement('canvas');
+            const tallCtx = tallCanvas.getContext('2d');
+            tallCanvas.width = tallWidth;
+            tallCanvas.height = tallHeight;
             
-            if (!isFirstPage) pdf.addPage();
-            
-            // Add to PDF
-            const imgData = canvas.toDataURL('image/jpeg', 0.95);
-            pdf.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight);
+            // White background
+            tallCtx.fillStyle = 'white';
+            tallCtx.fillRect(0, 0, tallWidth, tallHeight);
+
+            let currentY = 0;
+            let cumulativeOffset = 0;
+            for (const spacer of sortedSpacers) {
+                if (spacer.y > currentY) {
+                    const contentHeight = spacer.y - currentY; // in original units
+                    const destY = Math.round((currentY + cumulativeOffset) * scaleToWidth);
+                    const destH = Math.round(contentHeight * scaleToWidth);
+                    tallCtx.drawImage(
+                        tempCanvas,
+                        0, currentY, viewport.width, contentHeight,
+                        0, destY, tallWidth, destH
+                    );
+                }
+                // Draw spacer
+                const spacerY = Math.round((spacer.y + cumulativeOffset) * scaleToWidth);
+                const spacerH = Math.round(spacer.height * scaleToWidth);
+                this.drawSpacerOnCanvas(tallCtx, spacer, tallWidth, spacerY, spacerH, scaleToWidth);
+                currentY = spacer.y;
+                cumulativeOffset += spacer.height;
+            }
+            // Remaining content
+            if (currentY < viewport.height) {
+                const remaining = viewport.height - currentY;
+                const destY = Math.round((currentY + cumulativeOffset) * scaleToWidth);
+                const destH = Math.round(remaining * scaleToWidth);
+                tallCtx.drawImage(
+                    tempCanvas,
+                    0, currentY, viewport.width, remaining,
+                    0, destY, tallWidth, destH
+                );
+            }
+
+            // Slice tall canvas into A4-height pages
+            const sliceHeightPx = Math.floor(pageHeight * DPR);
+            let offset = 0;
+            let firstSlice = true;
+            while (offset < tallCanvas.height) {
+                const sliceCanvas = document.createElement('canvas');
+                const sliceCtx = sliceCanvas.getContext('2d');
+                const h = Math.min(sliceHeightPx, tallCanvas.height - offset);
+                sliceCanvas.width = tallWidth;
+                sliceCanvas.height = h;
+                sliceCtx.drawImage(
+                    tallCanvas,
+                    0, offset, tallWidth, h,
+                    0, 0, tallWidth, h
+                );
+                // Add to PDF
+                if (!isFirstPage || !firstSlice) {
+                    pdf.addPage();
+                }
+                const img = sliceCanvas.toDataURL('image/png');
+                pdf.addImage(img, 'PNG', 0, 0, pageWidth, h / DPR);
+                firstSlice = false;
+                offset += h;
+            }
             
         } catch (error) {
             console.error(`Error in exportPageSimple for page ${pageNum}:`, error);
