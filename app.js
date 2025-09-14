@@ -10,6 +10,7 @@ class PDFAnswerSpacer {
         this.isAddingSpacer = false;
         this.currentTool = 'select';
         this.renderToken = 0; // guards against concurrent renders
+        this._renderRAF = null; // coalesced re-render scheduling
         
         this.initializeElements();
         this.bindEvents();
@@ -563,17 +564,30 @@ class PDFAnswerSpacer {
         });
     }
 
-    updateSpacerProperty(spacerId, property, value) {
+    updateSpacerProperty(spacerId, property, value, options = {}) {
+        const immediate = options.immediate !== undefined ? options.immediate : true;
         // Find and update spacer
         for (let spacers of this.spacers.values()) {
             const spacer = spacers.find(s => s.id === spacerId);
             if (spacer) {
                 spacer[property] = value;
-                this.renderCurrentPage();
-                this.saveSettings();
+                if (immediate) {
+                    this.renderCurrentPage();
+                    this.saveSettings();
+                } else {
+                    this.scheduleRender();
+                }
                 break;
             }
         }
+    }
+
+    scheduleRender() {
+        if (this._renderRAF) return;
+        this._renderRAF = requestAnimationFrame(() => {
+            this._renderRAF = null;
+            this.renderCurrentPage();
+        });
     }
 
     setTool(tool) {
@@ -1375,13 +1389,16 @@ class PDFAnswerSpacer {
         const deltaY = e.clientY - this.dragStartY;
         const newY = Math.max(0, this.dragStartSpacerY + deltaY);
         
-        this.updateSpacerProperty(this.draggingSpacer, 'y', newY);
+        this.updateSpacerProperty(this.draggingSpacer, 'y', newY, { immediate: false });
     }
 
     stopDragSpacer = () => {
         this.draggingSpacer = null;
         document.removeEventListener('mousemove', this.handleSpacerDrag);
         document.removeEventListener('mouseup', this.stopDragSpacer);
+        // Commit final layout and persist
+        this.renderCurrentPage();
+        this.saveSettings();
     }
 
     startResizeSpacer(spacerId, e) {
@@ -1402,13 +1419,16 @@ class PDFAnswerSpacer {
         const newHeight = Math.max(20, this.resizeStartHeight + deltaY);
         
         // Update the spacer property and re-render the page
-        this.updateSpacerProperty(this.resizingSpacer, 'height', newHeight);
+        this.updateSpacerProperty(this.resizingSpacer, 'height', newHeight, { immediate: false });
     }
 
     stopResizeSpacer = () => {
         this.resizingSpacer = null;
         document.removeEventListener('mousemove', this.handleSpacerResize);
         document.removeEventListener('mouseup', this.stopResizeSpacer);
+        // Commit final layout and persist
+        this.renderCurrentPage();
+        this.saveSettings();
     }
 
     saveSettings() {
