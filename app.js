@@ -124,12 +124,21 @@ class PDFAnswerSpacer {
     }
 
     async renderCurrentPage() {
-        if (!this.pdfDocument) return;
+        if (!this.pdfDocument) {
+            console.log('No PDF document loaded');
+            return;
+        }
+        
+        console.log('Rendering page', this.currentPage, 'of', this.totalPages);
         
         this.showLoading(true);
         try {
             const page = await this.pdfDocument.getPage(this.currentPage);
+            console.log('Got page object:', page);
+            console.log('Page methods:', Object.getOwnPropertyNames(page));
+            
             const viewport = page.getViewport({ scale: this.scale });
+            console.log('Created viewport:', viewport);
             
             // Clear existing content safely
             this.pdfViewer.innerHTML = '';
@@ -153,6 +162,7 @@ class PDFAnswerSpacer {
             }
             
         } catch (error) {
+            console.error('Error in renderCurrentPage:', error);
             this.showError('Failed to render page: ' + error.message);
         } finally {
             this.showLoading(false);
