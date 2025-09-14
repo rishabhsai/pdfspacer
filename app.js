@@ -17,6 +17,64 @@ class PDFAnswerSpacer {
         this.loadSettings();
     }
 
+    async exportPDFPaginated(progressOverlay) {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        for (let pageNum = 1; pageNum <= this.totalPages; pageNum++) {
+            const progress = (pageNum / this.totalPages) * 100;
+            progressOverlay.querySelector('.progress-fill').style.width = progress + '%';
+            await this.exportPageSimple(pdf, pageNum, pageNum === 1, pageWidth, pageHeight);
+        }
+        pdf.save('modified-pdf.pdf');
+    }
+
+    async exportPDFSingleLong(progressOverlay) {
+        const { jsPDF } = window.jspdf;
+        const TEMP = new jsPDF({ unit: 'pt', format: 'a4' });
+        const pageWidth = TEMP.internal.pageSize.getWidth();
+        const DPR = 2;
+
+        const slices = [];
+        let totalHeightPx = 0;
+        for (let pageNum = 1; pageNum <= this.totalPages; pageNum++) {
+            const progress = (pageNum / this.totalPages) * 100;
+            progressOverlay.querySelector('.progress-fill').style.width = progress + '%';
+
+            const page = await this.pdfDocument.getPage(pageNum);
+            const viewport = page.getViewport({ scale: 1.0 });
+            const pageSpacers = this.spacers.get(pageNum) || [];
+
+            if (pageSpacers.length === 0) {
+                const scaleToWidth = (pageWidth * DPR) / viewport.width;
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = Math.floor(pageWidth * DPR);
+                canvas.height = Math.floor(viewport.height * scaleToWidth);
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                await this.renderSimplePage(ctx, page, viewport, canvas.width, canvas.height);
+                slices.push(canvas);
+                totalHeightPx += canvas.height;
+            } else {
+                const tall = await this.buildTallReflowCanvas(page, viewport, pageSpacers, pageWidth, DPR);
+                slices.push(tall);
+                totalHeightPx += tall.height;
+            }
+        }
+
+        const totalHeightPt = totalHeightPx / DPR;
+        const pdf = new jsPDF({ unit: 'pt', format: [pageWidth, totalHeightPt] });
+        let y = 0;
+        for (const c of slices) {
+            const img = c.toDataURL('image/png');
+            const hPt = c.height / DPR;
+            pdf.addImage(img, 'PNG', 0, y, pageWidth, hPt);
+            y += hPt;
+        }
+        pdf.save('modified-pdf.pdf');
+    }
     initializeElements() {
         // File controls
         this.pdfInput = document.getElementById('pdfInput');
@@ -24,6 +82,7 @@ class PDFAnswerSpacer {
         this.loadPdfBtn = document.getElementById('loadPdfBtn');
         this.loadPdfBtnMain = document.getElementById('loadPdfBtnMain');
         this.exportPdfBtn = document.getElementById('exportPdfBtn');
+        this.exportModeSelect = document.getElementById('exportMode');
         
         // Project controls
         this.saveProjectBtn = document.getElementById('saveProjectBtn');
@@ -126,7 +185,8 @@ class PDFAnswerSpacer {
         }
     }
 
-    async renderCurrentPage() {
+    async renderCurrentPage(options = {}) {
+        const interactive = options.interactive === true;
         if (!this.pdfDocument) {
             console.log('No PDF document loaded');
             return;
@@ -137,7 +197,7 @@ class PDFAnswerSpacer {
         // Prepare render token and preserve scroll position
         const token = ++this.renderToken;
         const prevScrollTop = this.viewerContainer ? this.viewerContainer.scrollTop : 0;
-        this.showLoading(true);
+        if (!interactive) this.showLoading(true);
         try {
             const page = await this.pdfDocument.getPage(this.currentPage);
             console.log('Got page object:', page);
@@ -171,7 +231,7 @@ class PDFAnswerSpacer {
             console.error('Error in renderCurrentPage:', error);
             this.showError('Failed to render page: ' + error.message);
         } finally {
-            this.showLoading(false);
+            if (!interactive) this.showLoading(false);
             // Restore scroll position on next frame for smoother UX
             if (this.viewerContainer && token === this.renderToken) {
                 requestAnimationFrame(() => {
@@ -289,7 +349,7 @@ class PDFAnswerSpacer {
                 if (e.target.classList.contains('spacer-handle')) {
                     this.startResizeSpacer(spacer.id, e);
                 } else {
-                    this.startDragSpacer(spacer.id, e);
+                    this.beginPotentialDrag(spacer.id, e);
                 }
             });
             
@@ -816,59 +876,12 @@ class PDFAnswerSpacer {
         document.body.appendChild(progressOverlay);
         
         try {
-            const { jsPDF } = window.jspdf;
-            // We'll export to one long page for the entire document to avoid gaps
-            // First, discover base width in points (use A4 width by default)
-            const TEMP = new jsPDF({ unit: 'pt', format: 'a4' });
-            const pageWidth = TEMP.internal.pageSize.getWidth();
-            const DPR = 2;
-            
-            console.log('Starting PDF export, total pages:', this.totalPages);
-            
-            // Build tall canvases per source page, then concatenate into one long PDF page
-            const slices = [];
-            let totalHeightPx = 0;
-            for (let pageNum = 1; pageNum <= this.totalPages; pageNum++) {
-                // Update progress
-                const progress = (pageNum / this.totalPages) * 100;
-                progressOverlay.querySelector('.progress-fill').style.width = progress + '%';
-
-                const page = await this.pdfDocument.getPage(pageNum);
-                const viewport = page.getViewport({ scale: 1.0 });
-                const pageSpacers = this.spacers.get(pageNum) || [];
-
-                if (pageSpacers.length === 0) {
-                    // Render this page scaled to width only (no spacers)
-                    const scaleToWidth = (pageWidth * DPR) / viewport.width;
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    canvas.width = Math.floor(pageWidth * DPR);
-                    canvas.height = Math.floor(viewport.height * scaleToWidth);
-                    ctx.fillStyle = 'white';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    await this.renderSimplePage(ctx, page, viewport, canvas.width, canvas.height);
-                    slices.push(canvas);
-                    totalHeightPx += canvas.height;
-                } else {
-                    // Build tall reflowed canvas for this page
-                    const tall = await this.buildTallReflowCanvas(page, viewport, pageSpacers, pageWidth, DPR);
-                    slices.push(tall);
-                    totalHeightPx += tall.height;
-                }
+            const mode = (this.exportModeSelect && this.exportModeSelect.value) || 'paginated';
+            if (mode === 'long') {
+                await this.exportPDFSingleLong(progressOverlay);
+            } else {
+                await this.exportPDFPaginated(progressOverlay);
             }
-
-            // Create final single-page PDF sized to combined height
-            const totalHeightPt = totalHeightPx / DPR;
-            const pdf = new jsPDF({ unit: 'pt', format: [pageWidth, totalHeightPt] });
-            let y = 0;
-            for (const c of slices) {
-                const img = c.toDataURL('image/png');
-                const hPt = c.height / DPR;
-                pdf.addImage(img, 'PNG', 0, y, pageWidth, hPt);
-                y += hPt;
-            }
-
-            pdf.save('modified-pdf.pdf');
             
         } catch (error) {
             console.error('Export error:', error);
@@ -1373,6 +1386,36 @@ class PDFAnswerSpacer {
         context.restore();
     }
 
+    // Click vs drag threshold handling
+    beginPotentialDrag(spacerId, e) {
+        this.pendingDrag = { id: spacerId, startY: e.clientY, moved: false };
+        document.addEventListener('mousemove', this.monitorPotentialDrag);
+        document.addEventListener('mouseup', this.finalizePotentialDrag, { once: true });
+    }
+
+    monitorPotentialDrag = (e) => {
+        if (!this.pendingDrag) return;
+        const threshold = 5;
+        const delta = Math.abs(e.clientY - this.pendingDrag.startY);
+        if (delta > threshold) {
+            const id = this.pendingDrag.id;
+            // Stop monitoring and start real drag
+            document.removeEventListener('mousemove', this.monitorPotentialDrag);
+            this.pendingDrag = null;
+            this.startDragSpacer(id, e);
+        }
+    }
+
+    finalizePotentialDrag = (e) => {
+        // If no drag started, treat as selection
+        if (this.pendingDrag) {
+            const id = this.pendingDrag.id;
+            document.removeEventListener('mousemove', this.monitorPotentialDrag);
+            this.pendingDrag = null;
+            this.selectSpacer(id);
+        }
+    }
+
     startDragSpacer(spacerId, e) {
         this.draggingSpacer = spacerId;
         this.dragStartY = e.clientY;
@@ -1380,6 +1423,7 @@ class PDFAnswerSpacer {
         
         document.addEventListener('mousemove', this.handleSpacerDrag);
         document.addEventListener('mouseup', this.stopDragSpacer);
+        // Prevent text selection once drag has actually started
         e.preventDefault();
     }
 
@@ -1397,8 +1441,8 @@ class PDFAnswerSpacer {
         document.removeEventListener('mousemove', this.handleSpacerDrag);
         document.removeEventListener('mouseup', this.stopDragSpacer);
         // Commit final layout and persist
-        this.renderCurrentPage();
-        this.saveSettings();
+            this.renderCurrentPage({ interactive: false });
+            this.saveSettings();
     }
 
     startResizeSpacer(spacerId, e) {
@@ -1427,7 +1471,7 @@ class PDFAnswerSpacer {
         document.removeEventListener('mousemove', this.handleSpacerResize);
         document.removeEventListener('mouseup', this.stopResizeSpacer);
         // Commit final layout and persist
-        this.renderCurrentPage();
+        this.renderCurrentPage({ interactive: false });
         this.saveSettings();
     }
 

@@ -22,6 +22,10 @@
                     <input type="file" id="projectInput" accept=".json" style="display: none;">
                     <button id="loadPdfBtn" class="btn btn-primary">Load PDF</button>
                     <button id="exportPdfBtn" class="btn btn-secondary" disabled>Export PDF</button>
+                    <select id="exportMode" class="select-compact" title="Export Mode">
+                        <option value="paginated" selected>Paginated A4</option>
+                        <option value="long">Single Long Page</option>
+                    </select>
                     <div class="dropdown">
                         <button id="projectMenuBtn" class="btn btn-icon" title="Project">📁</button>
                         <div id="projectMenu" class="dropdown-content">
