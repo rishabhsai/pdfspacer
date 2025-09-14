@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Answer Spacer</title>
+    <title>Add Space to PDF — Insert Blank Space for Answers & Notes | No Login</title>
+    <meta name="description" content="Quickly add blank space anywhere in your PDF for answers, notes, or extra writing. Perfect for forms, worksheets, or printouts. Free online—no login required!">
+    <meta name="keywords" content="add blank space to pdf for answers, insert space for notes in pdf, make room for writing in pdf worksheet, online pdf space tool no login, pdf form add answer space, addspacepdf">
+    <meta property="og:title" content="AddSpacePDF — Add Space to PDF">
+    <meta property="og:description" content="Add blank space anywhere in your PDF for answers and notes. Free, no login.">
+    <meta property="og:type" content="website">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -11,7 +16,7 @@
         <!-- Header -->
         <header class="header">
             <div class="header-left">
-                <h1>PDF Answer Spacer</h1>
+                <h1>Add Blank Space to Your PDF — For Notes, Answers, and More</h1>
                 <div class="file-controls">
                     <input type="file" id="pdfInput" accept=".pdf" style="display: none;">
                     <input type="file" id="projectInput" accept=".json" style="display: none;">
@@ -72,14 +77,15 @@
             <!-- PDF Viewer -->
             <main class="viewer-container">
                 <div id="pdfViewer" class="pdf-viewer">
-                    <div class="loading" id="loadingIndicator">
+                    <div class="loading" id="loadingIndicator" style="display: none;">
                         <div class="spinner"></div>
                         <p>Loading PDF...</p>
                     </div>
                     <div class="no-content" id="noContentMessage">
                         <div class="no-content-icon">📄</div>
-                        <h2>Welcome to PDF Answer Spacer</h2>
-                        <p>Load a PDF to start adding answer spaces between content</p>
+                        <h2>AddSpacePDF — Add Space to PDF</h2>
+                        <p>Need to fit answers, extra notes, or responses in your PDF? AddSpacePDF instantly creates space right where you need it—no login, no registration, no watermark. Just upload, click, and create space after questions or anywhere in your file!</p>
+                        <p style="color:#7f8c8d; font-size: 14px; margin-top: 8px;">Keywords: add blank space to PDF for answers • insert space for notes in PDF • make room for writing in PDF worksheet • online PDF space tool no login • addspacepdf</p>
                         <button id="loadPdfBtnMain" class="btn btn-primary">Choose PDF File</button>
                     </div>
                 </div>
