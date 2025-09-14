@@ -1001,10 +1001,10 @@ class PDFAnswerSpacer {
             
             if (pageSpacers.length === 0) {
                 // No spacers - render page normally
-                await this.renderPageWithoutSpacers(context, page, A4_WIDTH, A4_HEIGHT);
+                await this.renderExportPageWithoutSpacers(context, page, A4_WIDTH, A4_HEIGHT);
             } else {
                 // Has spacers - render with reflow
-                await this.renderPageWithSpacers(context, page, pageSpacers, A4_WIDTH, A4_HEIGHT);
+                await this.renderExportPageWithSpacers(context, page, pageSpacers, A4_WIDTH, A4_HEIGHT);
             }
             
             if (!isFirstPage) pdf.addPage();
@@ -1018,7 +1018,8 @@ class PDFAnswerSpacer {
         }
     }
 
-    async renderPageWithoutSpacers(context, page, canvasWidth, canvasHeight) {
+    // Export helpers: distinct names to avoid overriding viewer methods
+    async renderExportPageWithoutSpacers(context, page, canvasWidth, canvasHeight) {
         try {
             console.log('Rendering page without spacers');
             
@@ -1066,7 +1067,7 @@ class PDFAnswerSpacer {
         }
     }
 
-    async renderPageWithSpacers(context, page, pageSpacers, canvasWidth, canvasHeight) {
+    async renderExportPageWithSpacers(context, page, pageSpacers, canvasWidth, canvasHeight) {
         const viewport = page.getViewport({ scale: 1.0 });
         const sortedSpacers = [...pageSpacers].sort((a, b) => a.y - b.y);
         
@@ -1364,6 +1365,15 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('PDF.js library not loaded');
         alert('PDF.js library failed to load. Please refresh the page.');
         return;
+    }
+
+    // Configure PDF.js worker to avoid deprecation and ensure rendering works
+    try {
+        if (pdfjsLib && pdfjsLib.GlobalWorkerOptions) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+    } catch (e) {
+        console.warn('Unable to set PDF.js workerSrc:', e);
     }
     
     if (typeof window.jspdf === 'undefined') {
