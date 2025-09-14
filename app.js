@@ -9,6 +9,7 @@ class PDFAnswerSpacer {
         this.selectedSpacer = null;
         this.isAddingSpacer = false;
         this.currentTool = 'select';
+        this.renderToken = 0; // guards against concurrent renders
         
         this.initializeElements();
         this.bindEvents();
@@ -129,10 +130,11 @@ class PDFAnswerSpacer {
             console.log('No PDF document loaded');
             return;
         }
-        
+
         console.log('Rendering page', this.currentPage, 'of', this.totalPages);
-        
-        // Preserve scroll position to avoid jumping to top on re-render
+
+        // Prepare render token and preserve scroll position
+        const token = ++this.renderToken;
         const prevScrollTop = this.viewerContainer ? this.viewerContainer.scrollTop : 0;
         this.showLoading(true);
         try {
@@ -158,19 +160,19 @@ class PDFAnswerSpacer {
             
             if (pageSpacers.length === 0) {
                 // No spacers - render normally
-                await this.renderPageWithoutSpacers(page, viewport, loadingIndicator);
+                await this.renderPageWithoutSpacers(page, viewport, loadingIndicator, token);
             } else {
                 // Has spacers - render with reflow
-                await this.renderPageWithSpacers(page, viewport, pageSpacers, loadingIndicator);
+                await this.renderPageWithSpacers(page, viewport, pageSpacers, loadingIndicator, token);
             }
-            
+
         } catch (error) {
             console.error('Error in renderCurrentPage:', error);
             this.showError('Failed to render page: ' + error.message);
         } finally {
             this.showLoading(false);
             // Restore scroll position on next frame for smoother UX
-            if (this.viewerContainer) {
+            if (this.viewerContainer && token === this.renderToken) {
                 requestAnimationFrame(() => {
                     this.viewerContainer.scrollTop = prevScrollTop;
                 });
@@ -178,7 +180,7 @@ class PDFAnswerSpacer {
         }
     }
 
-    async renderPageWithoutSpacers(page, viewport, loadingIndicator) {
+    async renderPageWithoutSpacers(page, viewport, loadingIndicator, token) {
         // Create canvas
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
@@ -205,15 +207,14 @@ class PDFAnswerSpacer {
         pageContainer.addEventListener('click', (e) => this.handlePageClick(e));
         pageContainer.addEventListener('contextmenu', (e) => this.handlePageContextMenu(e));
         
-        // Replace loading with page safely
-        if (loadingIndicator.parentNode === this.pdfViewer) {
-            this.pdfViewer.replaceChild(pageContainer, loadingIndicator);
-        } else {
+        // Finalize only if this is the latest render
+        if (token === this.renderToken) {
+            this.pdfViewer.innerHTML = '';
             this.pdfViewer.appendChild(pageContainer);
         }
     }
 
-    async renderPageWithSpacers(page, viewport, pageSpacers, loadingIndicator) {
+    async renderPageWithSpacers(page, viewport, pageSpacers, loadingIndicator, token) {
         // Sort spacers by Y position
         const sortedSpacers = [...pageSpacers].sort((a, b) => a.y - b.y);
         
@@ -322,10 +323,9 @@ class PDFAnswerSpacer {
         pageContainer.addEventListener('click', (e) => this.handlePageClick(e));
         pageContainer.addEventListener('contextmenu', (e) => this.handlePageContextMenu(e));
         
-        // Replace loading with page safely
-        if (loadingIndicator.parentNode === this.pdfViewer) {
-            this.pdfViewer.replaceChild(pageContainer, loadingIndicator);
-        } else {
+        // Finalize only if this is the latest render
+        if (token === this.renderToken) {
+            this.pdfViewer.innerHTML = '';
             this.pdfViewer.appendChild(pageContainer);
         }
     }
