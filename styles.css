@@ -351,6 +351,27 @@ h1 {
     border-radius: 0;
 }
 
+/* Page break preview */
+.page-break-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 0;
+    border-top: 2px dashed rgba(231, 76, 60, 0.8);
+    pointer-events: none;
+}
+.page-break-label {
+    position: absolute;
+    right: 8px;
+    top: -10px;
+    background: rgba(255,255,255,0.9);
+    color: #e74c3c;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    border: 1px solid rgba(231, 76, 60, 0.5);
+}
+
 /* Loading and no content states */
 .loading {
     display: flex;

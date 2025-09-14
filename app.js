@@ -11,6 +11,9 @@ class PDFAnswerSpacer {
         this.currentTool = 'select';
         this.renderToken = 0; // guards against concurrent renders
         this._renderRAF = null; // coalesced re-render scheduling
+        this.showPageBreaks = false;
+        this.showPlacementGuide = false;
+        this.lastSpacerPreset = { style: 'plain', ruleSpacing: 20, dotPitch: 10, gridSize: 20 };
         
         this.initializeElements();
         this.bindEvents();
@@ -268,6 +271,8 @@ class PDFAnswerSpacer {
         pageContainer.addEventListener('click', (e) => this.handlePageClick(e));
         pageContainer.addEventListener('contextmenu', (e) => this.handlePageContextMenu(e));
         
+        // Add page break overlays if enabled
+        if (this.showPageBreaks) this.addPageBreakOverlays(pageContainer, viewport);
         // Finalize only if this is the latest render
         if (token === this.renderToken) {
             this.pdfViewer.innerHTML = '';
@@ -384,6 +389,8 @@ class PDFAnswerSpacer {
         pageContainer.addEventListener('click', (e) => this.handlePageClick(e));
         pageContainer.addEventListener('contextmenu', (e) => this.handlePageContextMenu(e));
         
+        // Add page break overlays if enabled
+        if (this.showPageBreaks) this.addPageBreakOverlays(pageContainer, viewport);
         // Finalize only if this is the latest render
         if (token === this.renderToken) {
             this.pdfViewer.innerHTML = '';
@@ -1479,7 +1486,10 @@ class PDFAnswerSpacer {
         const settings = {
             spacers: Object.fromEntries(this.spacers),
             scale: this.scale,
-            currentPage: this.currentPage
+            currentPage: this.currentPage,
+            showPageBreaks: this.showPageBreaks,
+            showPlacementGuide: this.showPlacementGuide,
+            lastSpacerPreset: this.lastSpacerPreset
         };
         localStorage.setItem('pdfSpacerSettings', JSON.stringify(settings));
     }
@@ -1492,10 +1502,14 @@ class PDFAnswerSpacer {
                 this.spacers = new Map(Object.entries(settings.spacers || {}));
                 this.scale = settings.scale || 1.0;
                 this.currentPage = settings.currentPage || 1;
+                if (typeof settings.showPageBreaks === 'boolean') this.showPageBreaks = settings.showPageBreaks;
+                if (typeof settings.showPlacementGuide === 'boolean') this.showPlacementGuide = settings.showPlacementGuide;
+                if (settings.lastSpacerPreset) this.lastSpacerPreset = settings.lastSpacerPreset;
             } catch (error) {
                 console.warn('Failed to load settings:', error);
             }
         }
+        if (this.showBreaksToggle) this.showBreaksToggle.checked = this.showPageBreaks;
     }
 
     saveProject() {
