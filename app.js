@@ -44,6 +44,7 @@ class PDFAnswerSpacer {
         this.textBtn = document.getElementById('textBtn');
         
         // Viewer
+        this.viewerContainer = document.querySelector('.viewer-container');
         this.pdfViewer = document.getElementById('pdfViewer');
         this.loadingIndicator = document.getElementById('loadingIndicator');
         this.noContentMessage = document.getElementById('noContentMessage');
@@ -131,6 +132,8 @@ class PDFAnswerSpacer {
         
         console.log('Rendering page', this.currentPage, 'of', this.totalPages);
         
+        // Preserve scroll position to avoid jumping to top on re-render
+        const prevScrollTop = this.viewerContainer ? this.viewerContainer.scrollTop : 0;
         this.showLoading(true);
         try {
             const page = await this.pdfDocument.getPage(this.currentPage);
@@ -166,6 +169,12 @@ class PDFAnswerSpacer {
             this.showError('Failed to render page: ' + error.message);
         } finally {
             this.showLoading(false);
+            // Restore scroll position on next frame for smoother UX
+            if (this.viewerContainer) {
+                requestAnimationFrame(() => {
+                    this.viewerContainer.scrollTop = prevScrollTop;
+                });
+            }
         }
     }
 
