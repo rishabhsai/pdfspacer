@@ -803,27 +803,57 @@ class PDFAnswerSpacer {
         
         try {
             const { jsPDF } = window.jspdf;
-            // Use points so our A4 math matches canvas and PDF dims
-            const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const pageHeight = pdf.internal.pageSize.getHeight();
+            // We'll export to one long page for the entire document to avoid gaps
+            // First, discover base width in points (use A4 width by default)
+            const TEMP = new jsPDF({ unit: 'pt', format: 'a4' });
+            const pageWidth = TEMP.internal.pageSize.getWidth();
+            const DPR = 2;
             
             console.log('Starting PDF export, total pages:', this.totalPages);
             
-            // Export each page using the same method as the viewer
+            // Build tall canvases per source page, then concatenate into one long PDF page
+            const slices = [];
+            let totalHeightPx = 0;
             for (let pageNum = 1; pageNum <= this.totalPages; pageNum++) {
-                console.log(`Exporting page ${pageNum} of ${this.totalPages}`);
-                
                 // Update progress
-                const progress = ((pageNum) / this.totalPages) * 100;
+                const progress = (pageNum / this.totalPages) * 100;
                 progressOverlay.querySelector('.progress-fill').style.width = progress + '%';
-                
-                await this.exportPageSimple(pdf, pageNum, pageNum === 1, pageWidth, pageHeight);
+
+                const page = await this.pdfDocument.getPage(pageNum);
+                const viewport = page.getViewport({ scale: 1.0 });
+                const pageSpacers = this.spacers.get(pageNum) || [];
+
+                if (pageSpacers.length === 0) {
+                    // Render this page scaled to width only (no spacers)
+                    const scaleToWidth = (pageWidth * DPR) / viewport.width;
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = Math.floor(pageWidth * DPR);
+                    canvas.height = Math.floor(viewport.height * scaleToWidth);
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    await this.renderSimplePage(ctx, page, viewport, canvas.width, canvas.height);
+                    slices.push(canvas);
+                    totalHeightPx += canvas.height;
+                } else {
+                    // Build tall reflowed canvas for this page
+                    const tall = await this.buildTallReflowCanvas(page, viewport, pageSpacers, pageWidth, DPR);
+                    slices.push(tall);
+                    totalHeightPx += tall.height;
+                }
             }
-            
-            console.log('PDF export completed, saving...');
-            
-            // Save the PDF
+
+            // Create final single-page PDF sized to combined height
+            const totalHeightPt = totalHeightPx / DPR;
+            const pdf = new jsPDF({ unit: 'pt', format: [pageWidth, totalHeightPt] });
+            let y = 0;
+            for (const c of slices) {
+                const img = c.toDataURL('image/png');
+                const hPt = c.height / DPR;
+                pdf.addImage(img, 'PNG', 0, y, pageWidth, hPt);
+                y += hPt;
+            }
+
             pdf.save('modified-pdf.pdf');
             
         } catch (error) {
@@ -1057,6 +1087,60 @@ class PDFAnswerSpacer {
                 offsetX, destY, scaledWidth, remainingHeight * scale
             );
         }
+    }
+
+    // Helper: build a tall canvas for a single source page with spacers, scaled to pageWidth at DPR
+    async buildTallReflowCanvas(page, viewport, pageSpacers, pageWidthPt, DPR) {
+        const sortedSpacers = [...pageSpacers].sort((a, b) => a.y - b.y);
+        const tallWidth = Math.floor(pageWidthPt * DPR);
+        const scaleToWidth = (pageWidthPt * DPR) / viewport.width;
+        let totalHeightUnits = viewport.height;
+        for (const s of sortedSpacers) totalHeightUnits += s.height;
+        const tallHeight = Math.ceil(totalHeightUnits * scaleToWidth);
+
+        const tempCanvas = document.createElement('canvas');
+        const tempContext = tempCanvas.getContext('2d');
+        tempCanvas.width = viewport.width;
+        tempCanvas.height = viewport.height;
+        await page.render({ canvasContext: tempContext, viewport }).promise;
+
+        const tallCanvas = document.createElement('canvas');
+        const tallCtx = tallCanvas.getContext('2d');
+        tallCanvas.width = tallWidth;
+        tallCanvas.height = tallHeight;
+        tallCtx.fillStyle = 'white';
+        tallCtx.fillRect(0, 0, tallWidth, tallHeight);
+
+        let currentY = 0;
+        let cumulativeOffset = 0;
+        for (const spacer of sortedSpacers) {
+            if (spacer.y > currentY) {
+                const contentHeight = spacer.y - currentY;
+                const destY = Math.round((currentY + cumulativeOffset) * scaleToWidth);
+                const destH = Math.round(contentHeight * scaleToWidth);
+                tallCtx.drawImage(
+                    tempCanvas,
+                    0, currentY, viewport.width, contentHeight,
+                    0, destY, tallWidth, destH
+                );
+            }
+            const spacerY = Math.round((spacer.y + cumulativeOffset) * scaleToWidth);
+            const spacerH = Math.round(spacer.height * scaleToWidth);
+            this.drawSpacerOnCanvas(tallCtx, spacer, tallWidth, spacerY, spacerH, scaleToWidth);
+            currentY = spacer.y;
+            cumulativeOffset += spacer.height;
+        }
+        if (currentY < viewport.height) {
+            const remaining = viewport.height - currentY;
+            const destY = Math.round((currentY + cumulativeOffset) * scaleToWidth);
+            const destH = Math.round(remaining * scaleToWidth);
+            tallCtx.drawImage(
+                tempCanvas,
+                0, currentY, viewport.width, remaining,
+                0, destY, tallWidth, destH
+            );
+        }
+        return tallCanvas;
     }
 
     async exportSinglePage(pdf, pageNum, isFirstPage) {
