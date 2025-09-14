@@ -16,11 +16,20 @@ Keep the app zero‑dependency and browser‑only. If you refactor, preserve a C
 - Manual sanity checks:
   - Load a multi‑page PDF, add/resize spacers, navigate pages, export, and verify spacing in the output PDF.
 
+Export modes
+- `Paginated A4` (default): produces standard A4 pages; reflowed content is sliced across pages at 2x DPI for crispness.
+- `Single Long Page`: concatenates all reflowed content into one long page; no pagination gaps.
+
 ## Coding Style & Naming Conventions
 - JavaScript: ES6+, 4‑space indent, semicolons, camelCase for variables/functions, PascalCase for classes (`PDFAnswerSpacer`).
 - CSS: kebab‑case class names (`.pdf-viewer`, `.spacer-label`), keep selectors shallow and reuse existing utility patterns (`.btn`, `.header`).
 - HTML: semantic where practical; double‑quoted attributes. Keep scripts/styles linked as in `index.html` (no bundlers).
 - Avoid adding frameworks or build tooling; prefer small, focused functions and DOM APIs.
+
+Viewer/Rendering architecture
+- `renderCurrentPage(options)`: tokenized to finalize only latest render; preserves scroll; skips loader during interactive updates.
+- Spacer interactions: click‑vs‑drag threshold (5px) avoids accidental drags; drag/resize coalesced via `requestAnimationFrame` and committed on mouseup.
+- Export implementation: uses PDF.js rendering; draws spacers on canvases; DPI currently set to 2x.
 
 ## Testing Guidelines
 - No formal test suite yet. Favor manual flows and small, testable helpers.
@@ -33,8 +42,15 @@ Keep the app zero‑dependency and browser‑only. If you refactor, preserve a C
   - Screenshots/GIFs for UI changes (viewer, spacers, export results).
   - Any new commands or config changes and concise test steps.
 
+SEO & Branding
+- Title and meta tags added in `index.html` (AddSpacePDF). Update responsibly; keep copy concise and keyword‑relevant.
+
+Known toggles and UX
+- Export mode selector `#exportMode` near Export button.
+- Loader is hidden by default until a PDF is chosen.
+
+
 ## Security & Configuration Tips
 - Libraries are version‑pinned via CDN; update versions deliberately and test large PDFs.
 - Handle user PDFs locally; do not transmit files or add network calls.
 - Avoid eval/dynamic script injection; keep DOM interactions scoped.
-
