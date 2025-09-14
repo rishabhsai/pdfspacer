@@ -646,7 +646,7 @@ class PDFAnswerSpacer {
         if (this._renderRAF) return;
         this._renderRAF = requestAnimationFrame(() => {
             this._renderRAF = null;
-            this.renderCurrentPage();
+            this.renderCurrentPage({ interactive: true });
         });
     }
 
