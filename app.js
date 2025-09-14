@@ -757,7 +757,16 @@ class PDFAnswerSpacer {
     }
 
     async exportPDF() {
-        if (!this.pdfDocument) return;
+        if (!this.pdfDocument) {
+            this.showError('No PDF loaded');
+            return;
+        }
+        
+        // Check if jsPDF is available
+        if (!window.jspdf) {
+            this.showError('jsPDF library not loaded');
+            return;
+        }
         
         // Show progress overlay
         const progressOverlay = document.createElement('div');
@@ -777,8 +786,12 @@ class PDFAnswerSpacer {
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF();
             
+            console.log('Starting PDF export, total pages:', this.totalPages);
+            
             // Export each page
             for (let pageNum = 1; pageNum <= this.totalPages; pageNum++) {
+                console.log(`Exporting page ${pageNum} of ${this.totalPages}`);
+                
                 // Update progress
                 const progress = ((pageNum) / this.totalPages) * 100;
                 progressOverlay.querySelector('.progress-fill').style.width = progress + '%';
@@ -786,82 +799,104 @@ class PDFAnswerSpacer {
                 await this.exportSinglePage(pdf, pageNum, pageNum === 1);
             }
             
+            console.log('PDF export completed, saving...');
+            
             // Save the PDF
             pdf.save('modified-pdf.pdf');
             
         } catch (error) {
+            console.error('Export error:', error);
             this.showError('Failed to export PDF: ' + error.message);
         } finally {
-            document.body.removeChild(progressOverlay);
+            if (progressOverlay.parentNode) {
+                document.body.removeChild(progressOverlay);
+            }
         }
     }
 
     async exportSinglePage(pdf, pageNum, isFirstPage) {
-        const { jsPDF } = window.jspdf;
-        const page = await this.pdfDocument.getPage(pageNum);
-        const pageSpacers = this.spacers.get(pageNum) || [];
-        
-        // Create a standard A4-sized canvas
-        const A4_WIDTH = 595; // A4 width in points
-        const A4_HEIGHT = 842; // A4 height in points
-        
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-        canvas.width = A4_WIDTH;
-        canvas.height = A4_HEIGHT;
-        
-        // Fill with white background
-        context.fillStyle = 'white';
-        context.fillRect(0, 0, A4_WIDTH, A4_HEIGHT);
-        
-        if (pageSpacers.length === 0) {
-            // No spacers - render page normally
-            await this.renderPageWithoutSpacers(context, page, A4_WIDTH, A4_HEIGHT);
-        } else {
-            // Has spacers - render with reflow
-            await this.renderPageWithSpacers(context, page, pageSpacers, A4_WIDTH, A4_HEIGHT);
+        try {
+            const page = await this.pdfDocument.getPage(pageNum);
+            const pageSpacers = this.spacers.get(pageNum) || [];
+            
+            // Create a standard A4-sized canvas
+            const A4_WIDTH = 595; // A4 width in points
+            const A4_HEIGHT = 842; // A4 height in points
+            
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = A4_WIDTH;
+            canvas.height = A4_HEIGHT;
+            
+            // Fill with white background
+            context.fillStyle = 'white';
+            context.fillRect(0, 0, A4_WIDTH, A4_HEIGHT);
+            
+            if (pageSpacers.length === 0) {
+                // No spacers - render page normally
+                await this.renderPageWithoutSpacers(context, page, A4_WIDTH, A4_HEIGHT);
+            } else {
+                // Has spacers - render with reflow
+                await this.renderPageWithSpacers(context, page, pageSpacers, A4_WIDTH, A4_HEIGHT);
+            }
+            
+            if (!isFirstPage) pdf.addPage();
+            
+            // Add to PDF
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            pdf.addImage(imgData, 'JPEG', 0, 0, A4_WIDTH, A4_HEIGHT);
+        } catch (error) {
+            console.error(`Error exporting page ${pageNum}:`, error);
+            throw error;
         }
-        
-        if (!isFirstPage) pdf.addPage();
-        
-        // Add to PDF
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-        pdf.addImage(imgData, 'JPEG', 0, 0, A4_WIDTH, A4_HEIGHT);
     }
 
     async renderPageWithoutSpacers(context, page, canvasWidth, canvasHeight) {
-        // Render the original page
-        const viewport = page.getViewport({ scale: 1.0 });
-        
-        // Calculate scale to fit canvas while maintaining aspect ratio
-        const scaleX = canvasWidth / viewport.width;
-        const scaleY = canvasHeight / viewport.height;
-        const scale = Math.min(scaleX, scaleY);
-        
-        // Calculate position to center the content
-        const scaledWidth = viewport.width * scale;
-        const scaledHeight = viewport.height * scale;
-        const offsetX = (canvasWidth - scaledWidth) / 2;
-        const offsetY = (canvasHeight - scaledHeight) / 2;
-        
-        // Create temporary canvas for the PDF page
-        const tempCanvas = document.createElement('canvas');
-        const tempContext = tempCanvas.getContext('2d');
-        tempCanvas.width = viewport.width;
-        tempCanvas.height = viewport.height;
-        
-        // Render the PDF page
-        await page.render({
-            canvasContext: tempContext,
-            viewport: viewport
-        }).promise;
-        
-        // Draw to main canvas with proper scaling and centering
-        context.drawImage(
-            tempCanvas,
-            0, 0, viewport.width, viewport.height,
-            offsetX, offsetY, scaledWidth, scaledHeight
-        );
+        try {
+            console.log('Rendering page without spacers');
+            
+            // Check if page has getViewport method
+            if (typeof page.getViewport !== 'function') {
+                throw new Error('Page object does not have getViewport method');
+            }
+            
+            // Render the original page
+            const viewport = page.getViewport({ scale: 1.0 });
+            console.log('Viewport:', viewport);
+            
+            // Calculate scale to fit canvas while maintaining aspect ratio
+            const scaleX = canvasWidth / viewport.width;
+            const scaleY = canvasHeight / viewport.height;
+            const scale = Math.min(scaleX, scaleY);
+            
+            // Calculate position to center the content
+            const scaledWidth = viewport.width * scale;
+            const scaledHeight = viewport.height * scale;
+            const offsetX = (canvasWidth - scaledWidth) / 2;
+            const offsetY = (canvasHeight - scaledHeight) / 2;
+            
+            // Create temporary canvas for the PDF page
+            const tempCanvas = document.createElement('canvas');
+            const tempContext = tempCanvas.getContext('2d');
+            tempCanvas.width = viewport.width;
+            tempCanvas.height = viewport.height;
+            
+            // Render the PDF page
+            await page.render({
+                canvasContext: tempContext,
+                viewport: viewport
+            }).promise;
+            
+            // Draw to main canvas with proper scaling and centering
+            context.drawImage(
+                tempCanvas,
+                0, 0, viewport.width, viewport.height,
+                offsetX, offsetY, scaledWidth, scaledHeight
+            );
+        } catch (error) {
+            console.error('Error in renderPageWithoutSpacers:', error);
+            throw error;
+        }
     }
 
     async renderPageWithSpacers(context, page, pageSpacers, canvasWidth, canvasHeight) {
