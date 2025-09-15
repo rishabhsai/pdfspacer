@@ -266,7 +266,7 @@ class PDFAnswerSpacer {
             this.showBreaksToggle.addEventListener('change', () => {
                 this.showPageBreaks = this.showBreaksToggle.checked;
                 this.saveSettings();
-                this.renderCurrentPage({ interactive: true });
+                this.renderDocument();
             });
         }
 
@@ -299,18 +299,21 @@ class PDFAnswerSpacer {
         
         this.showLoading(true);
         try {
+            console.log('loadPDF: reading file');
             const arrayBuffer = await file.arrayBuffer();
             
             // Clear existing content first
             this.pdfViewer.innerHTML = '';
             this.thumbnails.innerHTML = '<p class="no-content">Loading thumbnails...</p>';
             
-            this.pdfDocument = await pdfjsLib.getDocument(arrayBuffer).promise;
+            const data = new Uint8Array(arrayBuffer);
+            this.pdfDocument = await pdfjsLib.getDocument({ data }).promise;
             this.totalPages = this.pdfDocument.numPages;
             this.currentPage = 1;
             this.spacers.clear();
             this.selectedSpacer = null;
             
+            console.log('loadPDF: got document with pages:', this.totalPages);
             await this.renderDocument();
             this.updateUI();
             await this.generateThumbnails();
@@ -394,7 +397,12 @@ class PDFAnswerSpacer {
         const prevScrollTop = this.viewerContainer ? this.viewerContainer.scrollTop : 0;
         this.showLoading(true);
         try {
+            // Show a local spinner while streaming pages
             this.pdfViewer.innerHTML = '';
+            const localSpinner = document.createElement('div');
+            localSpinner.className = 'loading';
+            localSpinner.innerHTML = '<div class="spinner"></div><p>Rendering…</p>';
+            this.pdfViewer.appendChild(localSpinner);
             let globalOffset = 0;
             for (let p = 1; p <= this.totalPages; p++) {
                 const page = await this.pdfDocument.getPage(p);
@@ -408,7 +416,11 @@ class PDFAnswerSpacer {
                     pageContainer = await this.buildPageWithSpacers(page, viewport, spacers, p);
                 }
                 if (token !== this.renderToken) return; // aborted
-                this.pdfViewer.appendChild(pageContainer);
+                if (localSpinner.parentNode === this.pdfViewer) {
+                    this.pdfViewer.replaceChild(pageContainer, localSpinner);
+                } else {
+                    this.pdfViewer.appendChild(pageContainer);
+                }
                 const h = parseFloat(pageContainer.style.height || viewport.height);
                 globalOffset += h;
             }
@@ -1214,7 +1226,7 @@ class PDFAnswerSpacer {
 
     handleResize() {
         if (this.pdfDocument) {
-            this.renderCurrentPage();
+            this.renderDocument();
         }
     }
 
