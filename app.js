@@ -244,7 +244,12 @@ class PDFAnswerSpacer {
         // Project operations
         this.saveProjectBtn.addEventListener('click', () => this.saveProject());
         this.loadProjectBtn.addEventListener('click', () => this.projectInput.click());
-        this.projectInput.addEventListener('change', (e) => this.loadProject(e.target.files[0]));
+        this.projectInput.addEventListener('change', (e) => {
+            const f = e.target.files && e.target.files[0];
+            if (f) this.loadProject(f);
+            try { e.target.blur(); } catch (_) {}
+            e.target.value = '';
+        });
         this.clearProjectBtn.addEventListener('click', () => this.clearProject());
         
         // Navigation
