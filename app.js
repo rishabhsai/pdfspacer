@@ -769,7 +769,7 @@ class PDFAnswerSpacer {
             input.addEventListener('change', (e) => {
                 const property = e.target.dataset.property;
                 const value = e.target.type === 'number' ? parseFloat(e.target.value) : e.target.value;
-                this.updateSpacerProperty(spacer.id, property, value);
+                this.updateSpacerProperty(spacer.id, property, value, { immediate: false });
             });
         });
     }
