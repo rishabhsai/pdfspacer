@@ -12,6 +12,18 @@ body {
     overflow: hidden;
 }
 
+/* Keep file inputs programmatically clickable across browsers */
+.input-file-hidden {
+    position: fixed;
+    left: -9999px;
+    top: 0;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    border: 0;
+    padding: 0;
+}
+
 /* App layout */
 .app-container {
     height: 100vh;

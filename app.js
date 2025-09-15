@@ -232,7 +232,13 @@ class PDFAnswerSpacer {
         const pick = () => this.openPdfPicker();
         this.loadPdfBtn.addEventListener('click', pick);
         this.loadPdfBtnMain.addEventListener('click', pick);
-        if (this.pdfInput) this.pdfInput.addEventListener('change', (e) => this.loadPDF(e.target.files[0]));
+        if (this.pdfInput) this.pdfInput.addEventListener('change', (e) => {
+            const f = e.target.files && e.target.files[0];
+            if (f) this.loadPDF(f);
+            // Release focus to avoid aria-hidden warnings, reset value for re-selecting same file
+            try { e.target.blur(); } catch (_) {}
+            e.target.value = '';
+        });
         this.exportPdfBtn.addEventListener('click', () => this.openExportDialog());
         
         // Project operations
@@ -331,22 +337,31 @@ class PDFAnswerSpacer {
     }
 
     openPdfPicker() {
+        // Prefer persistent input (Safari/iOS reliability); fall back to ephemeral
         try {
-            // Ephemeral input for maximum browser compatibility
+            if (this.pdfInput && typeof this.pdfInput.click === 'function') {
+                this.pdfInput.value = '';
+                this.pdfInput.click();
+                return;
+            }
+        } catch (err) {
+            console.warn('Persistent pdfInput click failed, trying ephemeral input', err);
+        }
+        try {
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = '.pdf,application/pdf';
-            input.style.position = 'fixed';
-            input.style.left = '-9999px';
+            input.className = 'input-file-hidden';
             document.body.appendChild(input);
             input.addEventListener('change', (e) => {
                 const f = e.target.files && e.target.files[0];
                 if (f) this.loadPDF(f);
-                document.body.removeChild(input);
+                try { e.target.blur(); } catch (_) {}
+                if (input.parentNode) document.body.removeChild(input);
             }, { once: true });
             input.click();
-        } catch (err) {
-            console.error('openPdfPicker error', err);
+        } catch (err2) {
+            console.error('openPdfPicker error', err2);
         }
     }
 
@@ -788,7 +803,7 @@ class PDFAnswerSpacer {
         }
     }
 
-    handleAddSpaceClick(e) {
+    async handleAddSpaceClick(e) {
         const pageContainer = e.currentTarget;
         const rect = pageContainer.getBoundingClientRect();
         const clickY = e.clientY - rect.top;
@@ -2047,28 +2062,31 @@ class PDFAnswerSpacer {
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
-    // Wait for PDF.js to be loaded
-    if (typeof pdfjsLib === 'undefined') {
-        console.error('PDF.js library not loaded');
-        alert('PDF.js library failed to load. Please refresh the page.');
-        return;
-    }
+    // Always initialize the app so UI remains interactive even if CDNs are slow.
+    const app = new PDFAnswerSpacer();
 
-    // Configure PDF.js worker to avoid deprecation and ensure rendering works
+    // Try to configure PDF.js worker if available; otherwise defer until loadPDF.
     try {
-        if (pdfjsLib && pdfjsLib.GlobalWorkerOptions) {
+        if (typeof pdfjsLib !== 'undefined' && pdfjsLib.GlobalWorkerOptions) {
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        } else {
+            console.warn('PDF.js not yet available; file picker still works.');
         }
     } catch (e) {
         console.warn('Unable to set PDF.js workerSrc:', e);
     }
-    
+
+    // Note: jsPDF is only required for export; UI should still work without it.
     if (typeof window.jspdf === 'undefined') {
-        console.error('jsPDF library not loaded');
-        alert('jsPDF library failed to load. Please refresh the page.');
-        return;
+        console.warn('jsPDF not loaded yet; export will be unavailable until it loads.');
+        // Disable export button defensively until library appears
+        if (app && app.exportPdfBtn) app.exportPdfBtn.disabled = true;
+        // Periodically check if jsPDF becomes available to re-enable export
+        const iv = setInterval(() => {
+            if (typeof window.jspdf !== 'undefined') {
+                if (app && app.exportPdfBtn && app.pdfDocument) app.exportPdfBtn.disabled = false;
+                clearInterval(iv);
+            }
+        }, 1000);
     }
-    
-    console.log('Libraries loaded successfully');
-    new PDFAnswerSpacer();
 });

@@ -18,15 +18,15 @@
             <div class="header-left">
                 <h1>Add Blank Space to Your PDF — For Notes, Answers, and More</h1>
                 <div class="file-controls">
-                    <input type="file" id="pdfInput" accept=".pdf" style="display: none;">
-                    <input type="file" id="projectInput" accept=".json" style="display: none;">
-                    <button id="loadPdfBtn" class="btn btn-primary">Load PDF</button>
+                    <input type="file" id="pdfInput" accept=".pdf,application/pdf" class="input-file-hidden" tabindex="-1">
+                    <input type="file" id="projectInput" accept=".json,application/json" class="input-file-hidden" tabindex="-1">
+                    <label id="loadPdfBtn" for="pdfInput" class="btn btn-primary" role="button">Load PDF</label>
                     <button id="exportPdfBtn" class="btn btn-secondary" disabled>Export PDF</button>
                     <div class="dropdown">
                         <button id="projectMenuBtn" class="btn btn-icon" title="Project">📁</button>
                         <div id="projectMenu" class="dropdown-content">
                             <button id="saveProjectBtn" class="dropdown-item">Save Project</button>
-                            <button id="loadProjectBtn" class="dropdown-item">Load Project</button>
+                        <label id="loadProjectBtn" for="projectInput" class="dropdown-item" role="button">Load Project</label>
                             <button id="clearProjectBtn" class="dropdown-item">Clear All</button>
                         </div>
                     </div>
@@ -89,7 +89,7 @@
                         <h2>PDFSpacer.com — Add Space to PDF</h2>
                         <p>Need to fit answers, extra notes, or responses in your PDF? PDFSpacer instantly creates space right where you need it—no login, no registration, no watermark. Just upload, click, and create space after questions or anywhere in your file!</p>
                         <p style="color:#7f8c8d; font-size: 14px; margin-top: 8px;">Keywords: add blank space to PDF for answers • insert space for notes in PDF • make room for writing in PDF worksheet • online PDF space tool no login • addspacepdf</p>
-                        <button id="loadPdfBtnMain" class="btn btn-primary">Choose PDF File</button>
+                        <label id="loadPdfBtnMain" for="pdfInput" class="btn btn-primary" role="button">Choose PDF File</label>
                     </div>
                 </div>
             </main>
