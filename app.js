@@ -494,10 +494,32 @@ class PDFAnswerSpacer {
         
         // Add page break overlays if enabled
         if (this.showPageBreaks) this.addPageBreakOverlays(pageContainer, viewport);
+        // Add page break overlays if enabled
+        if (this.showPageBreaks) this.addPageBreakOverlays(pageContainer, viewport);
         // Finalize only if this is the latest render
         if (token === this.renderToken) {
             this.pdfViewer.innerHTML = '';
             this.pdfViewer.appendChild(pageContainer);
+        }
+    }
+
+    addPageBreakOverlays(pageContainer, viewport) {
+        // Remove any existing overlays
+        pageContainer.querySelectorAll('.page-break-line').forEach(n => n.remove());
+        const A4W = 595, A4H = 842;
+        const ratio = A4H / A4W;
+        const pageWidth = viewport.width; // pixels
+        const step = pageWidth * ratio; // pixels per A4 page height
+        const containerHeight = parseFloat(pageContainer.style.height || `${viewport.height}`);
+        for (let y = step; y < containerHeight - 1; y += step) {
+            const line = document.createElement('div');
+            line.className = 'page-break-line';
+            line.style.top = `${y}px`;
+            const label = document.createElement('div');
+            label.className = 'page-break-label';
+            label.textContent = 'Page break';
+            line.appendChild(label);
+            pageContainer.appendChild(line);
         }
     }
 
@@ -767,6 +789,10 @@ class PDFAnswerSpacer {
                 <label class="property-label">Y Position (px)</label>
                 <input type="number" class="property-input" data-property="y" value="${spacer.y}" min="0">
             </div>
+            <div class="prop-actions">
+                <button class="btn btn-icon small" title="Duplicate" data-action="prop-duplicate">📄</button>
+                <button class="btn btn-icon small" title="Delete" data-action="prop-delete">🗑️</button>
+            </div>
         `;
         
         // Add event listeners
@@ -777,6 +803,11 @@ class PDFAnswerSpacer {
                 this.updateSpacerProperty(spacer.id, property, value, { immediate: false });
             });
         });
+
+        const dupBtn = this.spacerProperties.querySelector('[data-action="prop-duplicate"]');
+        if (dupBtn) dupBtn.addEventListener('click', () => this.duplicateSpacer(spacer.id));
+        const delBtn = this.spacerProperties.querySelector('[data-action="prop-delete"]');
+        if (delBtn) delBtn.addEventListener('click', () => this.deleteSpacer(spacer.id));
     }
 
     updateSpacerProperty(spacerId, property, value, options = {}) {
@@ -1585,7 +1616,17 @@ class PDFAnswerSpacer {
         this.draggingSpacer = spacerId;
         this.dragStartY = e.clientY;
         this.dragStartSpacerY = this.getSpacerProperty(spacerId, 'y');
-        
+        // Create ghost overlay
+        const el = document.querySelector(`[data-spacer-id="${spacerId}"]`);
+        const container = el ? el.parentElement : this.pdfViewer.querySelector('.pdf-page');
+        if (container) {
+            this.dragGhost = document.createElement('div');
+            this.dragGhost.className = 'spacer-ghost';
+            this.dragGhost.style.top = `${this.dragStartSpacerY}px`;
+            this.dragGhost.style.height = `${parseInt(el?.style.height||'100',10)}px`;
+            container.appendChild(this.dragGhost);
+        }
+
         document.addEventListener('mousemove', this.handleSpacerDrag);
         document.addEventListener('mouseup', this.stopDragSpacer);
         // Prevent text selection once drag has actually started
@@ -1597,8 +1638,9 @@ class PDFAnswerSpacer {
         
         const deltaY = e.clientY - this.dragStartY;
         const newY = Math.max(0, this.dragStartSpacerY + deltaY);
-        
-        this.updateSpacerProperty(this.draggingSpacer, 'y', newY, { immediate: false });
+        // Move ghost only (no re-render)
+        if (this.dragGhost) this.dragGhost.style.top = `${newY}px`;
+        this.pendingY = newY;
     }
 
     stopDragSpacer = () => {
@@ -1606,8 +1648,14 @@ class PDFAnswerSpacer {
         document.removeEventListener('mousemove', this.handleSpacerDrag);
         document.removeEventListener('mouseup', this.stopDragSpacer);
         // Commit final layout and persist
-            this.renderCurrentPage({ interactive: false });
-            this.saveSettings();
+        if (typeof this.pendingY === 'number') {
+            this.updateSpacerProperty(this.getSelectedOr(this.draggingSpacer), 'y', this.pendingY, { immediate: true });
+            this.pendingY = null;
+        }
+        if (this.dragGhost && this.dragGhost.parentNode) this.dragGhost.parentNode.removeChild(this.dragGhost);
+        this.dragGhost = null;
+        this.renderCurrentPage({ interactive: false });
+        this.saveSettings();
     }
 
     startResizeSpacer(spacerId, e) {
@@ -1619,6 +1667,15 @@ class PDFAnswerSpacer {
         document.addEventListener('mouseup', this.stopResizeSpacer);
         e.preventDefault();
         e.stopPropagation();
+        const el = document.querySelector(`[data-spacer-id="${spacerId}"]`);
+        const container = el ? el.parentElement : this.pdfViewer.querySelector('.pdf-page');
+        if (container) {
+            this.resizeGhost = document.createElement('div');
+            this.resizeGhost.className = 'spacer-ghost';
+            this.resizeGhost.style.top = `${parseInt(el?.style.top||'0',10)}px`;
+            this.resizeGhost.style.height = `${this.resizeStartHeight}px`;
+            container.appendChild(this.resizeGhost);
+        }
     }
 
     handleSpacerResize = (e) => {
@@ -1627,8 +1684,9 @@ class PDFAnswerSpacer {
         const deltaY = e.clientY - this.resizeStartY;
         const newHeight = Math.max(20, this.resizeStartHeight + deltaY);
         
-        // Update the spacer property and re-render the page
-        this.updateSpacerProperty(this.resizingSpacer, 'height', newHeight, { immediate: false });
+        // Only move ghost; apply on release
+        if (this.resizeGhost) this.resizeGhost.style.height = `${newHeight}px`;
+        this.pendingHeight = newHeight;
     }
 
     stopResizeSpacer = () => {
@@ -1636,8 +1694,18 @@ class PDFAnswerSpacer {
         document.removeEventListener('mousemove', this.handleSpacerResize);
         document.removeEventListener('mouseup', this.stopResizeSpacer);
         // Commit final layout and persist
+        if (typeof this.pendingHeight === 'number') {
+            this.updateSpacerProperty(this.resizingSpacer, 'height', this.pendingHeight, { immediate: true });
+            this.pendingHeight = null;
+        }
+        if (this.resizeGhost && this.resizeGhost.parentNode) this.resizeGhost.parentNode.removeChild(this.resizeGhost);
+        this.resizeGhost = null;
         this.renderCurrentPage({ interactive: false });
         this.saveSettings();
+    }
+
+    getSelectedOr(id) {
+        return id || this.selectedSpacer;
     }
 
     saveSettings() {
