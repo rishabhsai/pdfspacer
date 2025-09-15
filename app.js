@@ -458,15 +458,16 @@ class PDFAnswerSpacer {
             }
         }
         
-        // Create new spacer at the original Y position
+        // Create new spacer at the original Y position, using last preset
+        const preset = this.lastSpacerPreset || { style: 'plain', ruleSpacing: 20, dotPitch: 10, gridSize: 20 };
         const spacer = {
             id: Date.now().toString(),
             y: Math.max(0, originalY),
             height: 100,
-            style: 'plain',
-            ruleSpacing: 20,
-            dotPitch: 10,
-            gridSize: 20
+            style: preset.style || 'plain',
+            ruleSpacing: preset.ruleSpacing || 20,
+            dotPitch: preset.dotPitch || 10,
+            gridSize: preset.gridSize || 20
         };
         
         this.addSpacerToPage(this.currentPage, spacer);
@@ -660,6 +661,16 @@ class PDFAnswerSpacer {
             const spacer = spacers.find(s => s.id === spacerId);
             if (spacer) {
                 spacer[property] = value;
+                // Update last-used preset when style or style-specific properties change
+                if (property === 'style') {
+                    this.lastSpacerPreset.style = value;
+                } else if (property === 'ruleSpacing') {
+                    this.lastSpacerPreset.ruleSpacing = value;
+                } else if (property === 'dotPitch') {
+                    this.lastSpacerPreset.dotPitch = value;
+                } else if (property === 'gridSize') {
+                    this.lastSpacerPreset.gridSize = value;
+                }
                 if (immediate) {
                     this.renderCurrentPage();
                     this.saveSettings();
