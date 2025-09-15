@@ -1017,8 +1017,8 @@ class PDFAnswerSpacer {
                 <input type="number" class="property-input" data-property="y" value="${spacer.y}" min="0">
             </div>
             <div class="prop-actions">
-                <button class="btn btn-icon small" title="Duplicate" data-action="prop-duplicate">📄</button>
-                <button class="btn btn-icon small" title="Delete" data-action="prop-delete">🗑️</button>
+                <button class="btn btn-secondary btn-sm" data-action="prop-duplicate">📄 Duplicate</button>
+                <button class="btn btn-danger btn-sm" data-action="prop-delete">🗑️ Delete</button>
             </div>
         `;
         

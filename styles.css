@@ -173,6 +173,14 @@ h1 {
     cursor: not-allowed;
 }
 
+/* New button variants for clarity in properties panel */
+.btn-danger {
+    background: #e74c3c;
+    color: #fff;
+}
+.btn-danger:hover { background: #c0392b; }
+.btn-sm { padding: 6px 10px; font-size: 13px; }
+
 .btn-icon {
     padding: 8px 12px;
     background: #ecf0f1;
