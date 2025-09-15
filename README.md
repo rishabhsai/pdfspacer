@@ -16,10 +16,9 @@ A powerful web application that allows you to add adjustable blank "answer space
 - **Dot Grid**: Adjustable dot pitch grid pattern (5-30px)
 
 ### User Interface
-- **PDF Viewer**: Page-by-page navigation with zoom controls (fit, zoom in/out)
+- **PDF Viewer**: Continuous scroll viewer with zoom controls (fit, zoom in/out)
 - **Add Space Tool**: Click-to-place spacers with visual preview
-- **Properties Panel**: Edit spacer height, position, style, and spacing properties
-- **Thumbnails Sidebar**: Quick navigation between pages
+- **Properties Panel**: Edit spacer height, position, style, and spacing properties; clear Duplicate/Delete buttons
 - **Keyboard Shortcuts**: Arrow keys to nudge spacers, Delete to remove
 
 ### Project Management
@@ -60,9 +59,10 @@ A powerful web application that allows you to add adjustable blank "answer space
 - **Clear All**: Remove all spacers (with confirmation)
 
 ### Exporting
-1. Click "Export PDF" to generate a new PDF with all spacers
-2. The export process shows progress and handles page breaks automatically
-3. The output PDF maintains original content quality while adding spaces
+1. Click "Export PDF" to open the export dialog
+2. Choose a layout: "Paginated A4" or "Single Long Page"
+3. Pick Render Scale (1x/2x/3x) and Image Quality
+4. Export runs with progress. Paginated export continues content across source pages by default (no forced new page)
 
 ## Technical Details
 
@@ -86,10 +86,12 @@ A powerful web application that allows you to add adjustable blank "answer space
 ## File Structure
 ```
 answer-blocks/
-├── index.html          # Main application interface
-├── styles.css          # Application styling
-├── app.js             # Core application logic
-└── README.md          # This documentation
+├── index.html     # Main application interface
+├── styles.css     # Application styling
+├── app.js         # Core application logic
+├── demo.html      # Simple landing linking to the app
+├── AGENTS.md      # Repo agent guidance and conventions
+└── README.md      # This documentation
 ```
 
 ## Core Algorithm
@@ -109,13 +111,17 @@ The application implements a sophisticated reflow system:
 - Browser memory limitations for very large PDFs
 - Export quality depends on original PDF resolution
 
-## Future Enhancements
+## Suggested Tools and Enhancements
 
-- Batch processing for multiple PDFs
-- More spacer styles (graph paper, music staff, etc.)
-- Undo/redo functionality
-- Collaborative editing features
-- Cloud storage integration
+- Undo/redo for spacer edits (Ctrl/Cmd+Z, Shift+Z)
+- Snap-to-grid toggle with adjustable grid size
+- Quick spacer presets (Small/Medium/Large heights)
+- Lock spacer to prevent accidental changes
+- Duplicate spacer to next page(s) with same offset
+- Nudge increments via modifier keys (1/5/10px)
+- Ruler overlay with guides and snapping
+- Multi-select spacers for bulk move/delete
+- Alignment helpers (distribute vertical spacing)
 
 ## Support
 

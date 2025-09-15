@@ -19,7 +19,8 @@ Keep the app zero‑dependency and browser‑only. If you refactor, preserve a C
 Export
 - Open Export dialog from `Export PDF`.
 - Modes: `Paginated A4` (default) or `Single Long Page`.
-- Options: DPI (1x/2x/3x) and “Continue immediately across source pages”.
+- Options: Render Scale (1x/2x/3x) and Image Quality (0.6/0.8/0.9).
+- Note: Continuous flow across source pages is enabled by default in Paginated mode; the explicit toggle was removed for simplicity.
 
 ## Coding Style & Naming Conventions
 - JavaScript: ES6+, 4‑space indent, semicolons, camelCase for variables/functions, PascalCase for classes (`PDFAnswerSpacer`).
@@ -28,13 +29,13 @@ Export
 - Avoid adding frameworks or build tooling; prefer small, focused functions and DOM APIs.
 
 Viewer/Rendering architecture
-- `renderCurrentPage(options)`: tokenized to finalize only latest render; preserves scroll; skips loader during interactive updates.
+- Continuous scroll viewer: renders all pages stacked; `renderCurrentPage(options)` tokenizes to finalize only latest render, preserves scroll, and skips loader during interactive updates.
 - Spacer interactions: click‑vs‑drag threshold (5px) avoids accidental drags; drag/resize coalesced via `requestAnimationFrame` and committed on mouseup.
 - Page break preview: dashed overlays from A4 aspect; toggle in header.
-- Placement guide: cursor-following horizontal line while adding spacers; toggle in header.
+- Placement guide: currently not exposed in UI.
 - Context menu: edit, delete, duplicate.
 - Last-used spacer preset remembered and applied to new spacers.
-- Export pipelines: PDF.js rendering onto canvases; optional continuous-flow pagination.
+- Export pipelines: PDF.js rendering onto canvases; optional continuous-flow pagination (enabled by default in Paginated mode).
 
 ## Testing Guidelines
 - No formal test suite yet. Favor manual flows and small, testable helpers.
@@ -51,7 +52,7 @@ SEO & Branding
 - Title and meta tags added in `index.html` (AddSpacePDF). Update responsibly; keep copy concise and keyword‑relevant.
 
 Known toggles and UX
-- Page Breaks and Placement Guide toggles in header.
+- Page Breaks toggle in header.
 - Export settings controlled in modal dialog.
 - Loader is hidden by default until a PDF is chosen.
 
