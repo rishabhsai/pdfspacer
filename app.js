@@ -307,15 +307,20 @@ class PDFAnswerSpacer {
             const viewport = page.getViewport({ scale: this.scale });
             console.log('Created viewport:', viewport);
             
-            // Clear existing content safely
-            this.pdfViewer.innerHTML = '';
-            
-            // Create loading indicator
-            const loadingIndicator = document.createElement('div');
-            loadingIndicator.id = 'loadingIndicator';
-            loadingIndicator.className = 'loading';
-            loadingIndicator.innerHTML = '<div class="spinner"></div><p>Loading PDF...</p>';
-            this.pdfViewer.appendChild(loadingIndicator);
+            // Clear existing content safely for non-interactive updates
+            let loadingIndicator = null;
+            if (!interactive) {
+                this.pdfViewer.innerHTML = '';
+                loadingIndicator = document.createElement('div');
+                loadingIndicator.id = 'loadingIndicator';
+                loadingIndicator.className = 'loading';
+                loadingIndicator.innerHTML = '<div class="spinner"></div><p>Loading PDF...</p>';
+                this.pdfViewer.appendChild(loadingIndicator);
+            } else {
+                // Create a lightweight placeholder to keep API consistent
+                loadingIndicator = document.createElement('div');
+                loadingIndicator.id = 'loadingIndicator';
+            }
             
             // Get spacers for this page
             const pageSpacers = this.spacers.get(this.currentPage) || [];
