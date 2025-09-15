@@ -118,6 +118,10 @@ class PDFAnswerSpacer {
         // Properties panel
         this.spacerProperties = document.getElementById('spacerProperties');
         this.thumbnails = document.getElementById('thumbnails');
+
+        // Toggles
+        this.showBreaksToggle = document.getElementById('showBreaksToggle');
+        this.showGuideToggle = document.getElementById('showGuideToggle');
     }
 
     bindEvents() {
@@ -154,6 +158,21 @@ class PDFAnswerSpacer {
         
         // Window resize
         window.addEventListener('resize', () => this.handleResize());
+
+        if (this.showBreaksToggle) {
+            this.showBreaksToggle.addEventListener('change', () => {
+                this.showPageBreaks = this.showBreaksToggle.checked;
+                this.saveSettings();
+                this.renderCurrentPage({ interactive: true });
+            });
+        }
+
+        if (this.showGuideToggle) {
+            this.showGuideToggle.addEventListener('change', () => {
+                this.showPlacementGuide = this.showGuideToggle.checked;
+                this.saveSettings();
+            });
+        }
     }
 
     async loadPDF(file) {
@@ -425,6 +444,28 @@ class PDFAnswerSpacer {
         );
         
         return segmentCanvas;
+    }
+
+    updatePlacementGuide(e) {
+        if (!(this.currentTool === 'addSpace' && this.showPlacementGuide)) {
+            this.hidePlacementGuide();
+            return;
+        }
+        const pageContainer = e.currentTarget;
+        const rect = pageContainer.getBoundingClientRect();
+        const y = e.clientY - rect.top;
+        let guide = pageContainer.querySelector('.cursor-guide');
+        if (!guide) {
+            guide = document.createElement('div');
+            guide.className = 'cursor-guide';
+            pageContainer.appendChild(guide);
+        }
+        guide.style.top = `${Math.max(0, Math.min(y, pageContainer.clientHeight))}px`;
+    }
+
+    hidePlacementGuide() {
+        const guides = this.pdfViewer.querySelectorAll('.cursor-guide');
+        guides.forEach(g => g.remove());
     }
 
 

@@ -504,6 +504,16 @@ h1 {
     z-index: 1000;
 }
 
+.cursor-guide {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 0;
+    border-top: 2px solid rgba(52,152,219,0.9);
+    pointer-events: none;
+    z-index: 1200;
+}
+
 /* Context menu */
 .context-menu {
     position: absolute;
