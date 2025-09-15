@@ -114,6 +114,32 @@
     </div>
 
     <!-- Scripts -->
+    <!-- Export Options Modal -->
+    <div id="exportDialog" style="display:none;" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="margin-bottom:10px;">Export Options</h3>
+            <div style="margin-bottom:12px;">
+                <label><input type="radio" name="exportMode" value="paginated" checked> Paginated A4</label>
+                <label style="margin-left:16px;"><input type="radio" name="exportMode" value="long"> Single Long Page</label>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label><input type="checkbox" id="optContinueAcross"> Continue immediately across source pages (no forced new page)</label>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label for="optDPI">Quality</label>
+                <select id="optDPI" class="select-compact" style="margin-left:6px;">
+                    <option value="1">1x</option>
+                    <option value="2" selected>2x</option>
+                    <option value="3">3x</option>
+                </select>
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+                <button id="exportCancelBtn" class="btn">Cancel</button>
+                <button id="exportConfirmBtn" class="btn btn-primary">Export</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="app.js"></script>

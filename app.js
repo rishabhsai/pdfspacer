@@ -20,24 +20,96 @@ class PDFAnswerSpacer {
         this.loadSettings();
     }
 
-    async exportPDFPaginated(progressOverlay) {
+    async exportPDFPaginated(progressOverlay, options = {}) {
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
         const pageWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
+        const DPR = options.dpi || 2;
+        const continueAcross = !!options.continueAcross;
+
+        if (!continueAcross) {
+            for (let pageNum = 1; pageNum <= this.totalPages; pageNum++) {
+                const progress = (pageNum / this.totalPages) * 100;
+                progressOverlay.querySelector('.progress-fill').style.width = progress + '%';
+                await this.exportPageSimple(pdf, pageNum, pageNum === 1, pageWidth, pageHeight);
+            }
+            pdf.save('modified-pdf.pdf');
+            return;
+        }
+
+        // Continue flow across source pages: build per-page tall canvases and slice across A4 pages
+        const slices = [];
         for (let pageNum = 1; pageNum <= this.totalPages; pageNum++) {
             const progress = (pageNum / this.totalPages) * 100;
             progressOverlay.querySelector('.progress-fill').style.width = progress + '%';
-            await this.exportPageSimple(pdf, pageNum, pageNum === 1, pageWidth, pageHeight);
+
+            const page = await this.pdfDocument.getPage(pageNum);
+            const viewport = page.getViewport({ scale: 1.0 });
+            const pageSpacers = this.spacers.get(pageNum) || [];
+
+            if (pageSpacers.length === 0) {
+                const scaleToWidth = (pageWidth * DPR) / viewport.width;
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = Math.floor(pageWidth * DPR);
+                canvas.height = Math.floor(viewport.height * scaleToWidth);
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                await this.renderSimplePage(ctx, page, viewport, canvas.width, canvas.height);
+                slices.push(canvas);
+            } else {
+                const tall = await this.buildTallReflowCanvas(page, viewport, pageSpacers, pageWidth, DPR);
+                slices.push(tall);
+            }
+        }
+
+        // Paginate the sequence of slices into fixed-height A4 pages
+        const pageHeightPx = Math.floor(pageHeight * DPR);
+        const pageWidthPx = Math.floor(pageWidth * DPR);
+        let sliceIndex = 0;
+        let sliceOffset = 0; // px offset within current slice
+        let isFirstPage = true;
+        while (sliceIndex < slices.length) {
+            const pageCanvas = document.createElement('canvas');
+            const pageCtx = pageCanvas.getContext('2d');
+            pageCanvas.width = pageWidthPx;
+            pageCanvas.height = pageHeightPx;
+            pageCtx.fillStyle = 'white';
+            pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+
+            let yDest = 0;
+            while (yDest < pageHeightPx && sliceIndex < slices.length) {
+                const src = slices[sliceIndex];
+                const remainingInSlice = src.height - sliceOffset;
+                const remainingOnPage = pageHeightPx - yDest;
+                const h = Math.min(remainingInSlice, remainingOnPage);
+                pageCtx.drawImage(
+                    src,
+                    0, sliceOffset, pageWidthPx, h,
+                    0, yDest, pageWidthPx, h
+                );
+                yDest += h;
+                sliceOffset += h;
+                if (sliceOffset >= src.height) {
+                    sliceIndex++;
+                    sliceOffset = 0;
+                }
+            }
+
+            if (!isFirstPage) pdf.addPage();
+            const img = pageCanvas.toDataURL('image/png');
+            pdf.addImage(img, 'PNG', 0, 0, pageWidth, pageHeight);
+            isFirstPage = false;
         }
         pdf.save('modified-pdf.pdf');
     }
 
-    async exportPDFSingleLong(progressOverlay) {
+    async exportPDFSingleLong(progressOverlay, options = {}) {
         const { jsPDF } = window.jspdf;
         const TEMP = new jsPDF({ unit: 'pt', format: 'a4' });
         const pageWidth = TEMP.internal.pageSize.getWidth();
-        const DPR = 2;
+        const DPR = options.dpi || 2;
 
         const slices = [];
         let totalHeightPx = 0;
@@ -85,7 +157,6 @@ class PDFAnswerSpacer {
         this.loadPdfBtn = document.getElementById('loadPdfBtn');
         this.loadPdfBtnMain = document.getElementById('loadPdfBtnMain');
         this.exportPdfBtn = document.getElementById('exportPdfBtn');
-        this.exportModeSelect = document.getElementById('exportMode');
         
         // Project controls
         this.saveProjectBtn = document.getElementById('saveProjectBtn');
@@ -122,6 +193,14 @@ class PDFAnswerSpacer {
         // Toggles
         this.showBreaksToggle = document.getElementById('showBreaksToggle');
         this.showGuideToggle = document.getElementById('showGuideToggle');
+
+        // Export dialog
+        this.exportDialog = document.getElementById('exportDialog');
+        this.exportConfirmBtn = document.getElementById('exportConfirmBtn');
+        this.exportCancelBtn = document.getElementById('exportCancelBtn');
+        this.exportModeRadios = document.querySelectorAll('input[name="exportMode"]');
+        this.optContinueAcross = document.getElementById('optContinueAcross');
+        this.optDPI = document.getElementById('optDPI');
     }
 
     bindEvents() {
@@ -129,7 +208,7 @@ class PDFAnswerSpacer {
         this.loadPdfBtn.addEventListener('click', () => this.pdfInput.click());
         this.loadPdfBtnMain.addEventListener('click', () => this.pdfInput.click());
         this.pdfInput.addEventListener('change', (e) => this.loadPDF(e.target.files[0]));
-        this.exportPdfBtn.addEventListener('click', () => this.exportPDF());
+        this.exportPdfBtn.addEventListener('click', () => this.openExportDialog());
         
         // Project operations
         this.saveProjectBtn.addEventListener('click', () => this.saveProject());
@@ -930,7 +1009,7 @@ class PDFAnswerSpacer {
         }
     }
 
-    async exportPDF() {
+    async exportPDF(options) {
         if (!this.pdfDocument) {
             this.showError('No PDF loaded');
             return;
@@ -957,11 +1036,11 @@ class PDFAnswerSpacer {
         document.body.appendChild(progressOverlay);
         
         try {
-            const mode = (this.exportModeSelect && this.exportModeSelect.value) || 'paginated';
+            const mode = options?.mode || 'paginated';
             if (mode === 'long') {
-                await this.exportPDFSingleLong(progressOverlay);
+                await this.exportPDFSingleLong(progressOverlay, options);
             } else {
-                await this.exportPDFPaginated(progressOverlay);
+                await this.exportPDFPaginated(progressOverlay, options);
             }
             
         } catch (error) {
@@ -1706,3 +1785,17 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('Libraries loaded successfully');
     new PDFAnswerSpacer();
 });
+        if (this.exportConfirmBtn) {
+            this.exportConfirmBtn.addEventListener('click', () => {
+                const mode = Array.from(this.exportModeRadios).find(r => r.checked)?.value || 'paginated';
+                const continueAcross = !!this.optContinueAcross?.checked;
+                const dpi = parseInt(this.optDPI?.value || '2', 10);
+                this.exportOptions = { mode, continueAcross, dpi };
+                this.saveSettings();
+                this.closeExportDialog();
+                this.exportPDF(this.exportOptions);
+            });
+        }
+        if (this.exportCancelBtn) {
+            this.exportCancelBtn.addEventListener('click', () => this.closeExportDialog());
+        }

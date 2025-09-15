@@ -618,3 +618,22 @@ h1 {
     background: #3498db;
     transition: width 0.3s ease;
 }
+
+/* Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 4000;
+}
+.modal-overlay.show { display: flex; }
+.modal-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    min-width: 360px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+}
