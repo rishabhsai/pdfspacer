@@ -21,6 +21,26 @@ class PDFAnswerSpacer {
         this.loadSettings();
     }
 
+    openExportDialog() {
+        if (!this.exportDialog) {
+            // Fallback: export with current options
+            this.exportPDF(this.exportOptions || { mode: 'paginated', continueAcross: true, dpi: 2 });
+            return;
+        }
+        const opts = this.exportOptions || { mode: 'paginated', continueAcross: true, dpi: 2 };
+        (this.exportModeRadios || []).forEach(r => { r.checked = (r.value === (opts.mode || 'paginated')); });
+        if (this.optContinueAcross) this.optContinueAcross.checked = !!opts.continueAcross;
+        if (this.optDPI) this.optDPI.value = String(opts.dpi || 2);
+        this.exportDialog.classList.add('show');
+        this.exportDialog.style.display = 'flex';
+    }
+
+    closeExportDialog() {
+        if (!this.exportDialog) return;
+        this.exportDialog.classList.remove('show');
+        this.exportDialog.style.display = 'none';
+    }
+
     async exportPDFPaginated(progressOverlay, options = {}) {
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
@@ -252,6 +272,21 @@ class PDFAnswerSpacer {
                 this.showPlacementGuide = this.showGuideToggle.checked;
                 this.saveSettings();
             });
+        }
+
+        if (this.exportConfirmBtn) {
+            this.exportConfirmBtn.addEventListener('click', () => {
+                const mode = Array.from(this.exportModeRadios || []).find(r => r.checked)?.value || 'paginated';
+                const continueAcross = !!this.optContinueAcross?.checked;
+                const dpi = parseInt(this.optDPI?.value || '2', 10);
+                this.exportOptions = { mode, continueAcross, dpi };
+                this.saveSettings();
+                this.closeExportDialog();
+                this.exportPDF(this.exportOptions);
+            });
+        }
+        if (this.exportCancelBtn) {
+            this.exportCancelBtn.addEventListener('click', () => this.closeExportDialog());
         }
     }
 
@@ -1626,7 +1661,9 @@ class PDFAnswerSpacer {
         if (container) {
             this.dragGhost = document.createElement('div');
             this.dragGhost.className = 'spacer-ghost';
-            this.dragGhost.style.top = `${this.dragStartSpacerY}px`;
+            const displayTop = parseInt(el?.style.top || '0', 10);
+            this.dragDisplayStartTop = isNaN(displayTop) ? 0 : displayTop;
+            this.dragGhost.style.top = `${this.dragDisplayStartTop}px`;
             this.dragGhost.style.height = `${parseInt(el?.style.height||'100',10)}px`;
             container.appendChild(this.dragGhost);
         }
@@ -1643,7 +1680,7 @@ class PDFAnswerSpacer {
         const deltaY = e.clientY - this.dragStartY;
         const newY = Math.max(0, this.dragStartSpacerY + deltaY);
         // Move ghost only (no re-render)
-        if (this.dragGhost) this.dragGhost.style.top = `${newY}px`;
+        if (this.dragGhost) this.dragGhost.style.top = `${(this.dragDisplayStartTop || 0) + deltaY}px`;
         this.pendingY = newY;
     }
 
@@ -1866,17 +1903,3 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('Libraries loaded successfully');
     new PDFAnswerSpacer();
 });
-        if (this.exportConfirmBtn) {
-            this.exportConfirmBtn.addEventListener('click', () => {
-                const mode = Array.from(this.exportModeRadios).find(r => r.checked)?.value || 'paginated';
-                const continueAcross = !!this.optContinueAcross?.checked;
-                const dpi = parseInt(this.optDPI?.value || '2', 10);
-                this.exportOptions = { mode, continueAcross, dpi };
-                this.saveSettings();
-                this.closeExportDialog();
-                this.exportPDF(this.exportOptions);
-            });
-        }
-        if (this.exportCancelBtn) {
-            this.exportCancelBtn.addEventListener('click', () => this.closeExportDialog());
-        }
