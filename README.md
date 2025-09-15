@@ -126,3 +126,39 @@ The application implements a sophisticated reflow system:
 ## Support
 
 This is a standalone web application that runs entirely in the browser. No server setup or installation required - just open `index.html` in your browser and start adding answer spaces to your PDFs!
+
+## Deploying to Vercel
+
+You can deploy this static site without a build step.
+
+- Option A — via Git:
+  - Push this repo to GitHub/GitLab/Bitbucket.
+  - In Vercel, create a New Project and import the repo.
+  - Framework Preset: "Other". Build and Output: leave empty (no build).
+  - Root Directory: repo root. Hit Deploy.
+
+- Option B — via CLI:
+  - Install Vercel CLI: `npm i -g vercel`
+  - From the repo root: `vercel` (follow prompts) then `vercel --prod` for production.
+
+Included `vercel.json` sets long cache headers for static assets and clean URLs.
+
+## Getting Indexed by Google
+
+1. Use a stable domain (Vercel domain or custom domain) and update:
+   - `index.html` `<link rel="canonical" href="https://your-domain.example/">`
+   - `robots.txt` Sitemap URL
+   - `sitemap.xml` `<loc>` entries
+2. Verify your site in Google Search Console:
+   - Add property for your domain.
+   - Verify via DNS TXT (recommended) or HTML tag.
+3. Submit `sitemap.xml` in Search Console.
+4. Request Indexing for the homepage (URL Inspection tool).
+5. Keep pages crawlable: `robots.txt` allows `/` (already set). Avoid password walls.
+6. Optimize basics:
+   - Unique `<title>` and meta description (already present).
+   - Open Graph tags (present) and JSON‑LD (added).
+   - Fast load: CDN libs, caching (via `vercel.json`).
+7. Optional: add `demo.html` links back to `/` and relevant anchor text.
+
+After deployment, replace all `your-domain.example` placeholders with your actual domain, redeploy, then re-submit the sitemap.
