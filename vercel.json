@@ -1,6 +1,10 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
+  "redirects": [
+    { "source": "http://pdfspacer.com/:path*", "destination": "https://pdfspacer.com/:path*", "permanent": true },
+    { "source": "https://www.pdfspacer.com/:path*", "destination": "https://pdfspacer.com/:path*", "permanent": true }
+  ],
   "headers": [
     {
       "source": "/(.*)\\.(css|js|png|jpg|jpeg|gif|svg)",
@@ -10,4 +14,3 @@
     }
   ]
 }
-

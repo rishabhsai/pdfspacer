@@ -2,12 +2,11 @@
 <!-- Update the <loc> URLs after deploy to your real domain -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://your-domain.example/</loc>
+    <loc>https://pdfspacer.com/</loc>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://your-domain.example/demo</loc>
+    <loc>https://pdfspacer.com/demo</loc>
     <priority>0.6</priority>
   </url>
 </urlset>
-
