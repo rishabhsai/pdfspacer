@@ -1642,7 +1642,8 @@ class PDFAnswerSpacer {
             currentPage: this.currentPage,
             showPageBreaks: this.showPageBreaks,
             showPlacementGuide: this.showPlacementGuide,
-            lastSpacerPreset: this.lastSpacerPreset
+            lastSpacerPreset: this.lastSpacerPreset,
+            exportOptions: this.exportOptions || { mode: 'paginated', continueAcross: false, dpi: 2 }
         };
         localStorage.setItem('pdfSpacerSettings', JSON.stringify(settings));
     }
@@ -1658,6 +1659,7 @@ class PDFAnswerSpacer {
                 if (typeof settings.showPageBreaks === 'boolean') this.showPageBreaks = settings.showPageBreaks;
                 if (typeof settings.showPlacementGuide === 'boolean') this.showPlacementGuide = settings.showPlacementGuide;
                 if (settings.lastSpacerPreset) this.lastSpacerPreset = settings.lastSpacerPreset;
+                if (settings.exportOptions) this.exportOptions = settings.exportOptions;
             } catch (error) {
                 console.warn('Failed to load settings:', error);
             }
