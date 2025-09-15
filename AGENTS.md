@@ -16,9 +16,10 @@ Keep the app zero‑dependency and browser‑only. If you refactor, preserve a C
 - Manual sanity checks:
   - Load a multi‑page PDF, add/resize spacers, navigate pages, export, and verify spacing in the output PDF.
 
-Export modes
-- `Paginated A4` (default): produces standard A4 pages; reflowed content is sliced across pages at 2x DPI for crispness.
-- `Single Long Page`: concatenates all reflowed content into one long page; no pagination gaps.
+Export
+- Open Export dialog from `Export PDF`.
+- Modes: `Paginated A4` (default) or `Single Long Page`.
+- Options: DPI (1x/2x/3x) and “Continue immediately across source pages”.
 
 ## Coding Style & Naming Conventions
 - JavaScript: ES6+, 4‑space indent, semicolons, camelCase for variables/functions, PascalCase for classes (`PDFAnswerSpacer`).
@@ -29,7 +30,11 @@ Export modes
 Viewer/Rendering architecture
 - `renderCurrentPage(options)`: tokenized to finalize only latest render; preserves scroll; skips loader during interactive updates.
 - Spacer interactions: click‑vs‑drag threshold (5px) avoids accidental drags; drag/resize coalesced via `requestAnimationFrame` and committed on mouseup.
-- Export implementation: uses PDF.js rendering; draws spacers on canvases; DPI currently set to 2x.
+- Page break preview: dashed overlays from A4 aspect; toggle in header.
+- Placement guide: cursor-following horizontal line while adding spacers; toggle in header.
+- Context menu: edit, delete, duplicate.
+- Last-used spacer preset remembered and applied to new spacers.
+- Export pipelines: PDF.js rendering onto canvases; optional continuous-flow pagination.
 
 ## Testing Guidelines
 - No formal test suite yet. Favor manual flows and small, testable helpers.
@@ -46,7 +51,8 @@ SEO & Branding
 - Title and meta tags added in `index.html` (AddSpacePDF). Update responsibly; keep copy concise and keyword‑relevant.
 
 Known toggles and UX
-- Export mode selector `#exportMode` near Export button.
+- Page Breaks and Placement Guide toggles in header.
+- Export settings controlled in modal dialog.
 - Loader is hidden by default until a PDF is chosen.
 
 
