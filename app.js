@@ -29,7 +29,6 @@ class PDFAnswerSpacer {
         }
         const opts = this.exportOptions || { mode: 'paginated', continueAcross: true, dpi: 2, jpegQuality: 0.8 };
         (this.exportModeRadios || []).forEach(r => { r.checked = (r.value === (opts.mode || 'paginated')); });
-        if (this.optContinueAcross) this.optContinueAcross.checked = !!opts.continueAcross;
         if (this.optDPI) this.optDPI.value = String(opts.dpi || 2);
         if (this.optQuality) this.optQuality.value = String(opts.jpegQuality || 0.8);
         this.exportDialog.classList.add('show');
@@ -221,17 +220,15 @@ class PDFAnswerSpacer {
         this.exportDialog = document.getElementById('exportDialog');
         this.exportConfirmBtn = document.getElementById('exportConfirmBtn');
         this.exportCancelBtn = document.getElementById('exportCancelBtn');
+        this.exportCloseX = document.getElementById('exportCloseX');
         this.exportModeRadios = document.querySelectorAll('input[name="exportMode"]');
-        this.optContinueAcross = document.getElementById('optContinueAcross');
         this.optDPI = document.getElementById('optDPI');
         this.optQuality = document.getElementById('optQuality');
     }
 
     bindEvents() {
         // File operations
-        const pick = () => this.openPdfPicker();
-        this.loadPdfBtn.addEventListener('click', pick);
-        this.loadPdfBtnMain.addEventListener('click', pick);
+        // Buttons are labels bound to inputs; do not also open programmatically to avoid double dialogs
         if (this.pdfInput) this.pdfInput.addEventListener('change', (e) => {
             const f = e.target.files && e.target.files[0];
             if (f) this.loadPDF(f);
@@ -243,7 +240,6 @@ class PDFAnswerSpacer {
         
         // Project operations
         this.saveProjectBtn.addEventListener('click', () => this.saveProject());
-        this.loadProjectBtn.addEventListener('click', () => this.projectInput.click());
         this.projectInput.addEventListener('change', (e) => {
             const f = e.target.files && e.target.files[0];
             if (f) this.loadProject(f);
@@ -292,9 +288,10 @@ class PDFAnswerSpacer {
         if (this.exportConfirmBtn) {
             this.exportConfirmBtn.addEventListener('click', () => {
                 const mode = Array.from(this.exportModeRadios || []).find(r => r.checked)?.value || 'paginated';
-                const continueAcross = !!this.optContinueAcross?.checked;
                 const dpi = parseInt(this.optDPI?.value || '2', 10);
                 const jpegQuality = parseFloat(this.optQuality?.value || '0.8');
+                // Always continue across pages by default (option removed from UI)
+                const continueAcross = true;
                 this.exportOptions = { mode, continueAcross, dpi, jpegQuality };
                 this.saveSettings();
                 this.closeExportDialog();
@@ -303,6 +300,10 @@ class PDFAnswerSpacer {
         }
         if (this.exportCancelBtn) {
             this.exportCancelBtn.addEventListener('click', () => this.closeExportDialog());
+        }
+        // Optional: Close button in modal header
+        if (this.exportCloseX) {
+            this.exportCloseX.addEventListener('click', () => this.closeExportDialog());
         }
     }
 
@@ -316,7 +317,7 @@ class PDFAnswerSpacer {
             
             // Clear existing content first
             this.pdfViewer.innerHTML = '';
-            this.thumbnails.innerHTML = '<p class="no-content">Loading thumbnails...</p>';
+            if (this.thumbnails) this.thumbnails.innerHTML = '<p class="no-content">Loading thumbnails...</p>';
             
             const data = new Uint8Array(arrayBuffer);
             this.pdfDocument = await pdfjsLib.getDocument({ data }).promise;
@@ -328,7 +329,7 @@ class PDFAnswerSpacer {
             console.log('loadPDF: got document with pages:', this.totalPages);
             await this.renderDocument();
             this.updateUI();
-            await this.generateThumbnails();
+            if (this.thumbnails) await this.generateThumbnails();
             this.saveSettings();
             
         } catch (error) {

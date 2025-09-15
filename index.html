@@ -52,7 +52,7 @@
         </header>
 
         <!-- Main Content -->
-        <div class="main-content">
+                <div class="main-content">
             <!-- Sidebar -->
             <aside class="sidebar">
                 <div class="sidebar-section">
@@ -66,13 +66,6 @@
                     <h3>Spacer Properties</h3>
                     <div id="spacerProperties" class="properties-panel">
                         <p class="no-selection">Select a spacer to edit properties</p>
-                    </div>
-                </div>
-
-                <div class="sidebar-section">
-                    <h3>Pages</h3>
-                    <div id="thumbnails" class="thumbnails-container">
-                        <p class="no-content">Load a PDF to see thumbnails</p>
                     </div>
                 </div>
             </aside>
@@ -109,32 +102,44 @@
     <!-- Scripts -->
     <!-- Export Options Modal -->
     <div id="exportDialog" style="display:none;" class="modal-overlay">
-            <div class="modal-content">
-                <h3 style="margin-bottom:10px;">Export Options</h3>
-                <div style="margin-bottom:12px;">
-                <label><input type="radio" name="exportMode" value="paginated" checked> Paginated A4</label>
-                <label style="margin-left:16px;"><input type="radio" name="exportMode" value="long"> Single Long Page</label>
-                </div>
-                <div style="margin-bottom:12px;">
-                <label><input type="checkbox" id="optContinueAcross" checked> Continue immediately across source pages (no forced new page)</label>
-                </div>
-            <div style="margin-bottom:12px;">
-                <label for="optDPI">Render Scale (DPI)</label>
-                <select id="optDPI" class="select-compact" style="margin-left:6px;">
-                    <option value="1">1x</option>
-                    <option value="2" selected>2x</option>
-                    <option value="3">3x</option>
-                </select>
+        <div class="modal-content modern">
+            <div class="modal-header">
+                <h3>Export PDF</h3>
+                <button id="exportCloseX" class="btn-icon small" aria-label="Close">✕</button>
             </div>
-            <div style="margin-bottom:12px;">
-                <label for="optQuality">Image Quality</label>
-                <select id="optQuality" class="select-compact" style="margin-left:6px;">
-                    <option value="0.6">Small (0.6)</option>
-                    <option value="0.8" selected>Balanced (0.8)</option>
-                    <option value="0.9">High (0.9)</option>
-                </select>
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="field-label">Layout</div>
+                    <div class="segmented" role="group" aria-label="Layout">
+                        <label class="segment">
+                            <input type="radio" name="exportMode" value="paginated" checked>
+                            <span>Paginated A4</span>
+                        </label>
+                        <label class="segment">
+                            <input type="radio" name="exportMode" value="long">
+                            <span>Single Long Page</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label for="optDPI" class="field-label">Render Scale</label>
+                    <select id="optDPI" class="select-compact">
+                        <option value="1">1x</option>
+                        <option value="2" selected>2x</option>
+                        <option value="3">3x</option>
+                    </select>
+                    <div class="help-text">Higher is sharper, but increases file size</div>
+                </div>
+                <div class="form-row">
+                    <label for="optQuality" class="field-label">Image Quality</label>
+                    <select id="optQuality" class="select-compact">
+                        <option value="0.6">Small (0.6)</option>
+                        <option value="0.8" selected>Balanced (0.8)</option>
+                        <option value="0.9">High (0.9)</option>
+                    </select>
+                </div>
             </div>
-            <div style="display:flex;gap:8px;justify-content:flex-end;">
+            <div class="modal-actions">
                 <button id="exportCancelBtn" class="btn">Cancel</button>
                 <button id="exportConfirmBtn" class="btn btn-primary">Export</button>
             </div>
