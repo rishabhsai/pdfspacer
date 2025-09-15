@@ -14,6 +14,7 @@ class PDFAnswerSpacer {
         this.showPageBreaks = false;
         this.showPlacementGuide = false;
         this.lastSpacerPreset = { style: 'plain', ruleSpacing: 20, dotPitch: 10, gridSize: 20 };
+        this.exportOptions = { mode: 'paginated', continueAcross: true, dpi: 2 };
         
         this.initializeElements();
         this.bindEvents();
@@ -553,7 +554,7 @@ class PDFAnswerSpacer {
     }
 
     updatePlacementGuide(e) {
-        if (!(this.currentTool === 'addSpace' && this.showPlacementGuide)) {
+        if (!this.showPlacementGuide) {
             this.hidePlacementGuide();
             return;
         }
@@ -938,6 +939,9 @@ class PDFAnswerSpacer {
     }
 
     handleKeydown(e) {
+        // Ignore when typing in form fields
+        const tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : '';
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target.isContentEditable) return;
         if (!this.selectedSpacer) return;
         
         switch (e.key) {
@@ -1644,12 +1648,13 @@ class PDFAnswerSpacer {
     }
 
     stopDragSpacer = () => {
+        const id = this.draggingSpacer;
         this.draggingSpacer = null;
         document.removeEventListener('mousemove', this.handleSpacerDrag);
         document.removeEventListener('mouseup', this.stopDragSpacer);
         // Commit final layout and persist
-        if (typeof this.pendingY === 'number') {
-            this.updateSpacerProperty(this.getSelectedOr(this.draggingSpacer), 'y', this.pendingY, { immediate: true });
+        if (typeof this.pendingY === 'number' && id) {
+            this.updateSpacerProperty(id, 'y', this.pendingY, { immediate: true });
             this.pendingY = null;
         }
         if (this.dragGhost && this.dragGhost.parentNode) this.dragGhost.parentNode.removeChild(this.dragGhost);
@@ -1690,12 +1695,13 @@ class PDFAnswerSpacer {
     }
 
     stopResizeSpacer = () => {
+        const id = this.resizingSpacer;
         this.resizingSpacer = null;
         document.removeEventListener('mousemove', this.handleSpacerResize);
         document.removeEventListener('mouseup', this.stopResizeSpacer);
         // Commit final layout and persist
-        if (typeof this.pendingHeight === 'number') {
-            this.updateSpacerProperty(this.resizingSpacer, 'height', this.pendingHeight, { immediate: true });
+        if (typeof this.pendingHeight === 'number' && id) {
+            this.updateSpacerProperty(id, 'height', this.pendingHeight, { immediate: true });
             this.pendingHeight = null;
         }
         if (this.resizeGhost && this.resizeGhost.parentNode) this.resizeGhost.parentNode.removeChild(this.resizeGhost);

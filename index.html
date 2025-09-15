@@ -22,10 +22,6 @@
                     <input type="file" id="projectInput" accept=".json" style="display: none;">
                     <button id="loadPdfBtn" class="btn btn-primary">Load PDF</button>
                     <button id="exportPdfBtn" class="btn btn-secondary" disabled>Export PDF</button>
-                    <select id="exportMode" class="select-compact" title="Export Mode">
-                        <option value="paginated" selected>Paginated A4</option>
-                        <option value="long">Single Long Page</option>
-                    </select>
                     <div class="dropdown">
                         <button id="projectMenuBtn" class="btn btn-icon" title="Project">📁</button>
                         <div id="projectMenu" class="dropdown-content">
@@ -93,8 +89,8 @@
                     </div>
                     <div class="no-content" id="noContentMessage">
                         <div class="no-content-icon">📄</div>
-                        <h2>AddSpacePDF — Add Space to PDF</h2>
-                        <p>Need to fit answers, extra notes, or responses in your PDF? AddSpacePDF instantly creates space right where you need it—no login, no registration, no watermark. Just upload, click, and create space after questions or anywhere in your file!</p>
+                        <h2>PDFSpacer.com — Add Space to PDF</h2>
+                        <p>Need to fit answers, extra notes, or responses in your PDF? PDFSpacer instantly creates space right where you need it—no login, no registration, no watermark. Just upload, click, and create space after questions or anywhere in your file!</p>
                         <p style="color:#7f8c8d; font-size: 14px; margin-top: 8px;">Keywords: add blank space to PDF for answers • insert space for notes in PDF • make room for writing in PDF worksheet • online PDF space tool no login • addspacepdf</p>
                         <button id="loadPdfBtnMain" class="btn btn-primary">Choose PDF File</button>
                     </div>
@@ -116,15 +112,15 @@
     <!-- Scripts -->
     <!-- Export Options Modal -->
     <div id="exportDialog" style="display:none;" class="modal-overlay">
-        <div class="modal-content">
-            <h3 style="margin-bottom:10px;">Export Options</h3>
-            <div style="margin-bottom:12px;">
+            <div class="modal-content">
+                <h3 style="margin-bottom:10px;">Export Options</h3>
+                <div style="margin-bottom:12px;">
                 <label><input type="radio" name="exportMode" value="paginated" checked> Paginated A4</label>
                 <label style="margin-left:16px;"><input type="radio" name="exportMode" value="long"> Single Long Page</label>
-            </div>
-            <div style="margin-bottom:12px;">
-                <label><input type="checkbox" id="optContinueAcross"> Continue immediately across source pages (no forced new page)</label>
-            </div>
+                </div>
+                <div style="margin-bottom:12px;">
+                <label><input type="checkbox" id="optContinueAcross" checked> Continue immediately across source pages (no forced new page)</label>
+                </div>
             <div style="margin-bottom:12px;">
                 <label for="optDPI">Quality</label>
                 <select id="optDPI" class="select-compact" style="margin-left:6px;">
