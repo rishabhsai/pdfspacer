@@ -27,10 +27,11 @@ class PDFAnswerSpacer {
             this.exportPDF(this.exportOptions || { mode: 'paginated', continueAcross: true, dpi: 2 });
             return;
         }
-        const opts = this.exportOptions || { mode: 'paginated', continueAcross: true, dpi: 2 };
+        const opts = this.exportOptions || { mode: 'paginated', continueAcross: true, dpi: 2, jpegQuality: 0.8 };
         (this.exportModeRadios || []).forEach(r => { r.checked = (r.value === (opts.mode || 'paginated')); });
         if (this.optContinueAcross) this.optContinueAcross.checked = !!opts.continueAcross;
         if (this.optDPI) this.optDPI.value = String(opts.dpi || 2);
+        if (this.optQuality) this.optQuality.value = String(opts.jpegQuality || 0.8);
         this.exportDialog.classList.add('show');
         this.exportDialog.style.display = 'flex';
     }
@@ -119,8 +120,9 @@ class PDFAnswerSpacer {
             }
 
             if (!isFirstPage) pdf.addPage();
-            const img = pageCanvas.toDataURL('image/png');
-            pdf.addImage(img, 'PNG', 0, 0, pageWidth, pageHeight);
+            const q = (this.exportOptions && this.exportOptions.jpegQuality) || 0.8;
+            const img = pageCanvas.toDataURL('image/jpeg', q);
+            pdf.addImage(img, 'JPEG', 0, 0, pageWidth, pageHeight);
             isFirstPage = false;
         }
         pdf.save('modified-pdf.pdf');
@@ -164,9 +166,10 @@ class PDFAnswerSpacer {
         const pdf = new jsPDF({ unit: 'pt', format: [pageWidth, totalHeightPt] });
         let y = 0;
         for (const c of slices) {
-            const img = c.toDataURL('image/png');
+            const q = (this.exportOptions && this.exportOptions.jpegQuality) || 0.8;
+            const img = c.toDataURL('image/jpeg', q);
             const hPt = c.height / DPR;
-            pdf.addImage(img, 'PNG', 0, y, pageWidth, hPt);
+            pdf.addImage(img, 'JPEG', 0, y, pageWidth, hPt);
             y += hPt;
         }
         pdf.save('modified-pdf.pdf');
@@ -197,7 +200,6 @@ class PDFAnswerSpacer {
         
         // Tools
         this.addSpaceBtn = document.getElementById('addSpaceBtn');
-        this.textBtn = document.getElementById('textBtn');
         
         // Viewer
         this.viewerContainer = document.querySelector('.viewer-container');
@@ -222,6 +224,7 @@ class PDFAnswerSpacer {
         this.exportModeRadios = document.querySelectorAll('input[name="exportMode"]');
         this.optContinueAcross = document.getElementById('optContinueAcross');
         this.optDPI = document.getElementById('optDPI');
+        this.optQuality = document.getElementById('optQuality');
     }
 
     bindEvents() {
@@ -248,7 +251,7 @@ class PDFAnswerSpacer {
         
         // Tools
         this.addSpaceBtn.addEventListener('click', () => this.setTool('addSpace'));
-        this.textBtn.addEventListener('click', () => this.setTool('text'));
+        
         
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => this.handleKeydown(e));
@@ -279,7 +282,8 @@ class PDFAnswerSpacer {
                 const mode = Array.from(this.exportModeRadios || []).find(r => r.checked)?.value || 'paginated';
                 const continueAcross = !!this.optContinueAcross?.checked;
                 const dpi = parseInt(this.optDPI?.value || '2', 10);
-                this.exportOptions = { mode, continueAcross, dpi };
+                const jpegQuality = parseFloat(this.optQuality?.value || '0.8');
+                this.exportOptions = { mode, continueAcross, dpi, jpegQuality };
                 this.saveSettings();
                 this.closeExportDialog();
                 this.exportPDF(this.exportOptions);
@@ -307,7 +311,7 @@ class PDFAnswerSpacer {
             this.spacers.clear();
             this.selectedSpacer = null;
             
-            await this.renderCurrentPage();
+            await this.renderDocument();
             this.updateUI();
             await this.generateThumbnails();
             this.saveSettings();
@@ -381,6 +385,135 @@ class PDFAnswerSpacer {
                 });
             }
         }
+    }
+
+    // Render the entire document as a continuous scroll (all pages stacked)
+    async renderDocument() {
+        if (!this.pdfDocument) return;
+        const token = ++this.renderToken;
+        const prevScrollTop = this.viewerContainer ? this.viewerContainer.scrollTop : 0;
+        this.showLoading(true);
+        try {
+            this.pdfViewer.innerHTML = '';
+            let globalOffset = 0;
+            for (let p = 1; p <= this.totalPages; p++) {
+                const page = await this.pdfDocument.getPage(p);
+                const viewport = page.getViewport({ scale: this.scale });
+                const spacers = this.spacers.get(p) || [];
+                this.currentDocOffset = globalOffset;
+                let pageContainer;
+                if (spacers.length === 0) {
+                    pageContainer = await this.buildPageWithoutSpacers(page, viewport, p);
+                } else {
+                    pageContainer = await this.buildPageWithSpacers(page, viewport, spacers, p);
+                }
+                if (token !== this.renderToken) return; // aborted
+                this.pdfViewer.appendChild(pageContainer);
+                const h = parseFloat(pageContainer.style.height || viewport.height);
+                globalOffset += h;
+            }
+        } catch (e) {
+            console.error('renderDocument error', e);
+            this.showError('Failed to render document: ' + e.message);
+        } finally {
+            this.showLoading(false);
+            if (this.viewerContainer) this.viewerContainer.scrollTop = prevScrollTop;
+        }
+    }
+
+    async buildPageWithoutSpacers(page, viewport, pageNumber) {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        await page.render({ canvasContext: context, viewport }).promise;
+        const pageContainer = document.createElement('div');
+        pageContainer.className = 'pdf-page';
+        pageContainer.style.width = viewport.width + 'px';
+        pageContainer.style.height = viewport.height + 'px';
+        pageContainer.dataset.pageNumber = pageNumber;
+        pageContainer.appendChild(canvas);
+        pageContainer.addEventListener('click', (e) => this.handlePageClick(e));
+        pageContainer.addEventListener('contextmenu', (e) => this.handlePageContextMenu(e));
+        if (this.showPageBreaks) this.addPageBreakOverlays(pageContainer, viewport);
+        return pageContainer;
+    }
+
+    async buildPageWithSpacers(page, viewport, pageSpacers, pageNumber) {
+        const sortedSpacers = [...pageSpacers].sort((a, b) => a.y - b.y);
+        const pageContainer = document.createElement('div');
+        pageContainer.className = 'pdf-page reflowed';
+        pageContainer.style.width = viewport.width + 'px';
+        pageContainer.dataset.pageNumber = pageNumber;
+        let currentY = 0;
+        let cumulativeOffset = 0;
+        for (const spacer of sortedSpacers) {
+            if (spacer.y > currentY) {
+                const contentHeight = spacer.y - currentY;
+                const contentCanvas = await this.createContentCanvas(page, viewport, currentY, contentHeight);
+                const contentElement = document.createElement('div');
+                contentElement.className = 'content-segment';
+                contentElement.style.position = 'absolute';
+                contentElement.style.left = '0';
+                contentElement.style.top = (currentY + cumulativeOffset) + 'px';
+                contentElement.style.width = viewport.width + 'px';
+                contentElement.style.height = contentHeight + 'px';
+                contentElement.appendChild(contentCanvas);
+                pageContainer.appendChild(contentElement);
+            }
+            const spacerElement = document.createElement('div');
+            spacerElement.className = `spacer ${spacer.style}`;
+            spacerElement.dataset.spacerId = spacer.id;
+            spacerElement.style.position = 'absolute';
+            spacerElement.style.left = '0';
+            spacerElement.style.top = (spacer.y + cumulativeOffset) + 'px';
+            spacerElement.style.width = viewport.width + 'px';
+            spacerElement.style.height = spacer.height + 'px';
+            if (spacer.style === 'ruled') {
+                spacerElement.style.setProperty('--rule-spacing', spacer.ruleSpacing + 'px');
+            } else if (spacer.style === 'dot-grid') {
+                spacerElement.style.setProperty('--dot-pitch', spacer.dotPitch + 'px');
+            } else if (spacer.style === 'squared') {
+                spacerElement.style.setProperty('--grid-size', spacer.gridSize + 'px');
+            }
+            const handle = document.createElement('div');
+            handle.className = 'spacer-handle';
+            spacerElement.appendChild(handle);
+            const label = document.createElement('div');
+            label.className = 'spacer-label';
+            label.textContent = `${spacer.height}px`;
+            spacerElement.appendChild(label);
+            spacerElement.addEventListener('click', (e) => { e.stopPropagation(); this.selectSpacer(spacer.id); });
+            spacerElement.addEventListener('mousedown', (e) => {
+                if (e.target.classList.contains('spacer-handle')) {
+                    this.startResizeSpacer(spacer.id, e);
+                } else {
+                    this.beginPotentialDrag(spacer.id, e);
+                }
+            });
+            pageContainer.appendChild(spacerElement);
+            currentY = spacer.y;
+            cumulativeOffset += spacer.height;
+        }
+        if (currentY < viewport.height) {
+            const remainingHeight = viewport.height - currentY;
+            const contentCanvas = await this.createContentCanvas(page, viewport, currentY, remainingHeight);
+            const contentElement = document.createElement('div');
+            contentElement.className = 'content-segment';
+            contentElement.style.position = 'absolute';
+            contentElement.style.left = '0';
+            contentElement.style.top = (currentY + cumulativeOffset) + 'px';
+            contentElement.style.width = viewport.width + 'px';
+            contentElement.style.height = remainingHeight + 'px';
+            contentElement.appendChild(contentCanvas);
+            pageContainer.appendChild(contentElement);
+        }
+        const totalHeight = viewport.height + cumulativeOffset;
+        pageContainer.style.height = totalHeight + 'px';
+        pageContainer.addEventListener('click', (e) => this.handlePageClick(e));
+        pageContainer.addEventListener('contextmenu', (e) => this.handlePageContextMenu(e));
+        if (this.showPageBreaks) this.addPageBreakOverlays(pageContainer, viewport);
+        return pageContainer;
     }
 
     async renderPageWithoutSpacers(page, viewport, loadingIndicator, token) {
@@ -547,7 +680,10 @@ class PDFAnswerSpacer {
         const pageWidth = viewport.width; // pixels
         const step = pageWidth * ratio; // pixels per A4 page height
         const containerHeight = parseFloat(pageContainer.style.height || `${viewport.height}`);
-        for (let y = step; y < containerHeight - 1; y += step) {
+        const offset = this.currentDocOffset || 0;
+        let y = step - (offset % step);
+        if (y === step) y = 0;
+        for (; y < containerHeight - 1; y += step) {
             const line = document.createElement('div');
             line.className = 'page-break-line';
             line.style.top = `${y}px`;
@@ -625,7 +761,8 @@ class PDFAnswerSpacer {
         const clickY = e.clientY - rect.top;
         
         // Calculate the original Y position (accounting for any existing spacers above)
-        const pageSpacers = this.spacers.get(this.currentPage) || [];
+        const pageNum = parseInt(pageContainer.dataset.pageNumber, 10) || this.currentPage;
+        const pageSpacers = this.spacers.get(pageNum) || [];
         const sortedSpacers = [...pageSpacers].sort((a, b) => a.y - b.y);
         
         let originalY = clickY;
@@ -653,8 +790,8 @@ class PDFAnswerSpacer {
             gridSize: preset.gridSize || 20
         };
         
-        this.addSpacerToPage(this.currentPage, spacer);
-        this.renderCurrentPage();
+        this.addSpacerToPage(pageNum, spacer);
+        await this.renderDocument();
         this.selectSpacer(spacer.id);
         this.saveSettings();
     }
@@ -864,7 +1001,7 @@ class PDFAnswerSpacer {
                     this.lastSpacerPreset.gridSize = value;
                 }
                 if (immediate) {
-                    this.renderCurrentPage();
+                    this.renderDocument();
                     this.saveSettings();
                 } else {
                     this.scheduleRender();
@@ -878,7 +1015,7 @@ class PDFAnswerSpacer {
         if (this._renderRAF) return;
         this._renderRAF = requestAnimationFrame(() => {
             this._renderRAF = null;
-            this.renderCurrentPage({ interactive: true });
+            this.renderDocument();
         });
     }
 
@@ -893,9 +1030,6 @@ class PDFAnswerSpacer {
         if (tool === 'addSpace') {
             this.addSpaceBtn.classList.add('active');
             document.body.style.cursor = 'crosshair';
-        } else if (tool === 'text') {
-            this.textBtn.classList.add('active');
-            document.body.style.cursor = 'text';
         } else {
             document.body.style.cursor = 'default';
         }
@@ -1153,8 +1287,9 @@ class PDFAnswerSpacer {
                 context.fillRect(0, 0, canvas.width, canvas.height);
                 await this.renderSimplePage(context, page, viewport, canvas.width, canvas.height);
                 if (!isFirstPage) pdf.addPage();
-                const img = canvas.toDataURL('image/png');
-                pdf.addImage(img, 'PNG', 0, 0, pageWidth, pageHeight);
+                const q = (this.exportOptions && this.exportOptions.jpegQuality) || 0.8;
+                const img = canvas.toDataURL('image/jpeg', q);
+                pdf.addImage(img, 'JPEG', 0, 0, pageWidth, pageHeight);
                 return;
             }
 
@@ -1234,8 +1369,9 @@ class PDFAnswerSpacer {
                 if (!isFirstPage || !firstSlice) {
                     pdf.addPage();
                 }
-                const img = sliceCanvas.toDataURL('image/png');
-                pdf.addImage(img, 'PNG', 0, 0, pageWidth, h / DPR);
+                const q2 = (this.exportOptions && this.exportOptions.jpegQuality) || 0.8;
+                const img = sliceCanvas.toDataURL('image/jpeg', q2);
+                pdf.addImage(img, 'JPEG', 0, 0, pageWidth, h / DPR);
                 firstSlice = false;
                 offset += h;
             }
@@ -1696,7 +1832,7 @@ class PDFAnswerSpacer {
         }
         if (this.dragGhost && this.dragGhost.parentNode) this.dragGhost.parentNode.removeChild(this.dragGhost);
         this.dragGhost = null;
-        this.renderCurrentPage({ interactive: false });
+        this.renderDocument();
         this.saveSettings();
     }
 
@@ -1743,7 +1879,7 @@ class PDFAnswerSpacer {
         }
         if (this.resizeGhost && this.resizeGhost.parentNode) this.resizeGhost.parentNode.removeChild(this.resizeGhost);
         this.resizeGhost = null;
-        this.renderCurrentPage({ interactive: false });
+        this.renderDocument();
         this.saveSettings();
     }
 
@@ -1826,7 +1962,7 @@ class PDFAnswerSpacer {
 
             // Re-render if PDF is loaded
             if (this.pdfDocument) {
-                await this.renderCurrentPage();
+                await this.renderDocument();
                 this.updateUI();
             }
 
@@ -1845,7 +1981,7 @@ class PDFAnswerSpacer {
             this.updateSpacerProperties();
             
             if (this.pdfDocument) {
-                this.renderCurrentPage();
+                this.renderDocument();
             }
             
             this.saveSettings();

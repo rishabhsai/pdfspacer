@@ -59,6 +59,9 @@ h1 {
     gap: 8px;
 }
 
+/* Hide legacy page controls in continuous mode */
+.page-controls { display: none; }
+
 /* Buttons */
 .btn {
     padding: 8px 16px;
@@ -532,15 +535,7 @@ h1 {
     z-index: 1000;
 }
 
-.cursor-guide {
-    position: absolute;
-    left: 0;
-    right: 0;
-    height: 0;
-    border-top: 2px solid rgba(52,152,219,0.9);
-    pointer-events: none;
-    z-index: 1200;
-}
+/* placement guide removed */
 
 /* Context menu */
 .context-menu {

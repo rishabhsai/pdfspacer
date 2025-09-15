@@ -41,9 +41,7 @@
                     <label style="display:inline-flex;align-items:center;gap:6px;margin-left:10px;font-size:13px;color:#2c3e50;">
                         <input type="checkbox" id="showBreaksToggle"> Page Breaks
                     </label>
-                    <label style="display:inline-flex;align-items:center;gap:6px;margin-left:10px;font-size:13px;color:#2c3e50;">
-                        <input type="checkbox" id="showGuideToggle"> Placement Guide
-                    </label>
+                    
                 </div>
                 <div class="page-controls">
                     <button id="prevPageBtn" class="btn btn-icon" disabled>‹</button>
@@ -61,7 +59,6 @@
                     <h3>Tools</h3>
                     <div class="tool-buttons">
                         <button id="addSpaceBtn" class="btn btn-tool" title="Add Space">📏</button>
-                        <button id="textBtn" class="btn btn-tool" title="Add Text">📝</button>
                     </div>
                 </div>
 
@@ -122,11 +119,19 @@
                 <label><input type="checkbox" id="optContinueAcross" checked> Continue immediately across source pages (no forced new page)</label>
                 </div>
             <div style="margin-bottom:12px;">
-                <label for="optDPI">Quality</label>
+                <label for="optDPI">Render Scale (DPI)</label>
                 <select id="optDPI" class="select-compact" style="margin-left:6px;">
                     <option value="1">1x</option>
                     <option value="2" selected>2x</option>
                     <option value="3">3x</option>
+                </select>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label for="optQuality">Image Quality</label>
+                <select id="optQuality" class="select-compact" style="margin-left:6px;">
+                    <option value="0.6">Small (0.6)</option>
+                    <option value="0.8" selected>Balanced (0.8)</option>
+                    <option value="0.9">High (0.9)</option>
                 </select>
             </div>
             <div style="display:flex;gap:8px;justify-content:flex-end;">
