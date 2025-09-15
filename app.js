@@ -229,9 +229,10 @@ class PDFAnswerSpacer {
 
     bindEvents() {
         // File operations
-        this.loadPdfBtn.addEventListener('click', () => this.pdfInput.click());
-        this.loadPdfBtnMain.addEventListener('click', () => this.pdfInput.click());
-        this.pdfInput.addEventListener('change', (e) => this.loadPDF(e.target.files[0]));
+        const pick = () => this.openPdfPicker();
+        this.loadPdfBtn.addEventListener('click', pick);
+        this.loadPdfBtnMain.addEventListener('click', pick);
+        if (this.pdfInput) this.pdfInput.addEventListener('change', (e) => this.loadPDF(e.target.files[0]));
         this.exportPdfBtn.addEventListener('click', () => this.openExportDialog());
         
         // Project operations
@@ -326,6 +327,26 @@ class PDFAnswerSpacer {
             this.noContentMessage.style.display = 'flex';
         } finally {
             this.showLoading(false);
+        }
+    }
+
+    openPdfPicker() {
+        try {
+            // Ephemeral input for maximum browser compatibility
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.pdf,application/pdf';
+            input.style.position = 'fixed';
+            input.style.left = '-9999px';
+            document.body.appendChild(input);
+            input.addEventListener('change', (e) => {
+                const f = e.target.files && e.target.files[0];
+                if (f) this.loadPDF(f);
+                document.body.removeChild(input);
+            }, { once: true });
+            input.click();
+        } catch (err) {
+            console.error('openPdfPicker error', err);
         }
     }
 
