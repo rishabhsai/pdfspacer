@@ -514,6 +514,14 @@ class PDFAnswerSpacer {
             this.hideContextMenu();
         });
         
+        const dup = this.contextMenu.querySelector('[data-action="duplicate"]');
+        if (dup) {
+            dup.addEventListener('click', () => {
+                this.duplicateSpacer(spacerId);
+                this.hideContextMenu();
+            });
+        }
+        
         this.contextMenu.querySelector('[data-action="delete"]').addEventListener('click', () => {
             this.deleteSpacer(spacerId);
             this.hideContextMenu();
@@ -529,6 +537,20 @@ class PDFAnswerSpacer {
             this.spacers.set(pageNumber, []);
         }
         this.spacers.get(pageNumber).push(spacer);
+    }
+
+    duplicateSpacer(spacerId) {
+        for (let [pageNumber, spacers] of this.spacers) {
+            const original = spacers.find(s => s.id === spacerId);
+            if (original) {
+                const copy = { ...original, id: Date.now().toString(), y: Math.max(0, original.y + 20) };
+                spacers.push(copy);
+                this.renderCurrentPage({ interactive: true });
+                this.selectSpacer(copy.id);
+                this.saveSettings();
+                return;
+            }
+        }
     }
 
     selectSpacer(spacerId) {
