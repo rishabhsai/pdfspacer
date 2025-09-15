@@ -20,6 +20,8 @@ class PDFAnswerSpacer {
         this.initializeElements();
         this.bindEvents();
         this.loadSettings();
+        // Attempt to restore cached session (PDF + layout) after settings
+        this.restoreSessionIfAvailable();
     }
 
     openExportDialog() {
@@ -186,6 +188,7 @@ class PDFAnswerSpacer {
         this.saveProjectBtn = document.getElementById('saveProjectBtn');
         this.loadProjectBtn = document.getElementById('loadProjectBtn');
         this.clearProjectBtn = document.getElementById('clearProjectBtn');
+        this.clearSessionBtn = document.getElementById('clearSessionBtn');
         
         // Navigation controls
         this.prevPageBtn = document.getElementById('prevPageBtn');
@@ -247,6 +250,9 @@ class PDFAnswerSpacer {
             try { e.target.blur(); } catch (_) {}
             e.target.value = '';
         });
+        if (this.clearSessionBtn) {
+            this.clearSessionBtn.addEventListener('click', () => this.clearSession());
+        }
         this.clearProjectBtn.addEventListener('click', () => this.clearProject());
         
         // Navigation
@@ -335,6 +341,17 @@ class PDFAnswerSpacer {
                 console.warn('Could not determine base page width', e);
                 this.basePageWidth = null;
             }
+            // Cache PDF bytes for session restore
+            try {
+                await this._idbSet('currentPDF', {
+                    name: file.name || 'document.pdf',
+                    type: file.type || 'application/pdf',
+                    data: arrayBuffer,
+                    ts: Date.now()
+                });
+            } catch (e) {
+                console.warn('Failed to cache PDF in IndexedDB', e);
+            }
             
             console.log('loadPDF: got document with pages:', this.totalPages);
             await this.renderDocument();
@@ -349,6 +366,33 @@ class PDFAnswerSpacer {
             this.noContentMessage.style.display = 'flex';
         } finally {
             this.showLoading(false);
+        }
+    }
+
+    async restoreSessionIfAvailable() {
+        try {
+            if (typeof indexedDB === 'undefined') return;
+            if (typeof pdfjsLib === 'undefined') return; // Will try next load if user interacts
+            const rec = await this._idbGet('currentPDF');
+            if (!rec || !rec.data) return;
+            const data = new Uint8Array(rec.data);
+            this.showLoading(true);
+            try {
+                this.pdfDocument = await pdfjsLib.getDocument({ data }).promise;
+                this.totalPages = this.pdfDocument.numPages;
+                // Precompute base page width
+                try {
+                    const first = await this.pdfDocument.getPage(1);
+                    this.basePageWidth = first.getViewport({ scale: 1.0 }).width;
+                } catch (_) {}
+                await this.renderDocument();
+                this.updateUI();
+                if (this.thumbnails) await this.generateThumbnails();
+            } finally {
+                this.showLoading(false);
+            }
+        } catch (e) {
+            console.warn('restoreSessionIfAvailable failed', e);
         }
     }
 
@@ -1980,7 +2024,12 @@ class PDFAnswerSpacer {
         if (saved) {
             try {
                 const settings = JSON.parse(saved);
-                this.spacers = new Map(Object.entries(settings.spacers || {}));
+                const m = new Map();
+                Object.entries(settings.spacers || {}).forEach(([k, v]) => {
+                    const n = parseInt(k, 10);
+                    m.set(isNaN(n) ? k : n, v);
+                });
+                this.spacers = m;
                 this.scale = settings.scale || 1.0;
                 this.currentPage = settings.currentPage || 1;
                 if (typeof settings.showPageBreaks === 'boolean') this.showPageBreaks = settings.showPageBreaks;
@@ -2031,7 +2080,9 @@ class PDFAnswerSpacer {
             }
 
             // Clear current spacers and load project data
-            this.spacers = new Map(Object.entries(project.spacers));
+            const m = new Map();
+            Object.entries(project.spacers).forEach(([k, v]) => m.set(parseInt(k, 10), v));
+            this.spacers = m;
             this.scale = project.scale || 1.0;
             this.currentPage = project.currentPage || 1;
 
@@ -2061,6 +2112,65 @@ class PDFAnswerSpacer {
             
             this.saveSettings();
         }
+    }
+
+    async clearSession() {
+        if (!confirm('Clear cached session? This removes the loaded PDF and saved layout from this browser.')) return;
+        try { await this._idbDelete('currentPDF'); } catch (e) { console.warn('Could not delete cached PDF', e); }
+        localStorage.removeItem('pdfSpacerSettings');
+        this.spacers.clear();
+        this.selectedSpacer = null;
+        this.pdfDocument = null;
+        this.totalPages = 0;
+        this.currentPage = 1;
+        if (this.spacerProperties) this.spacerProperties.innerHTML = '<p class="no-selection">Select a spacer to edit properties</p>';
+        if (this.pdfViewer) this.pdfViewer.innerHTML = '';
+        if (this.noContentMessage) this.noContentMessage.style.display = 'flex';
+        this.updateUI();
+        this.showSuccess('Session cleared');
+    }
+
+    // IndexedDB KV helpers
+    _openDB() {
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open('pdfspacer', 1);
+            req.onupgradeneeded = () => {
+                const db = req.result;
+                if (!db.objectStoreNames.contains('kv')) db.createObjectStore('kv');
+            };
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+        });
+    }
+    async _idbGet(key) {
+        const db = await this._openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('kv', 'readonly');
+            const store = tx.objectStore('kv');
+            const r = store.get(key);
+            r.onsuccess = () => resolve(r.result);
+            r.onerror = () => reject(r.error);
+        });
+    }
+    async _idbSet(key, value) {
+        const db = await this._openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('kv', 'readwrite');
+            const store = tx.objectStore('kv');
+            const r = store.put(value, key);
+            r.onsuccess = () => resolve();
+            r.onerror = () => reject(r.error);
+        });
+    }
+    async _idbDelete(key) {
+        const db = await this._openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('kv', 'readwrite');
+            const store = tx.objectStore('kv');
+            const r = store.delete(key);
+            r.onsuccess = () => resolve();
+            r.onerror = () => reject(r.error);
+        });
     }
 
     showSuccess(message) {
