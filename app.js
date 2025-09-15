@@ -5,6 +5,7 @@ class PDFAnswerSpacer {
         this.currentPage = 1;
         this.totalPages = 0;
         this.scale = 1.0;
+        this.basePageWidth = null; // unscaled width for fit-to-width
         this.spacers = new Map(); // Map of pageNumber -> array of spacers
         this.selectedSpacer = null;
         this.isAddingSpacer = false;
@@ -325,6 +326,15 @@ class PDFAnswerSpacer {
             this.currentPage = 1;
             this.spacers.clear();
             this.selectedSpacer = null;
+            // Precompute base page width for fit-to-width
+            try {
+                const first = await this.pdfDocument.getPage(1);
+                const vp1 = first.getViewport({ scale: 1.0 });
+                this.basePageWidth = vp1.width;
+            } catch (e) {
+                console.warn('Could not determine base page width', e);
+                this.basePageWidth = null;
+            }
             
             console.log('loadPDF: got document with pages:', this.totalPages);
             await this.renderDocument();
@@ -1099,19 +1109,30 @@ class PDFAnswerSpacer {
 
     setZoom(scale) {
         this.scale = Math.max(0.5, Math.min(3.0, scale));
-        this.renderCurrentPage();
+        // Re-render entire document for continuous viewer so pages don't disappear
+        this.renderDocument();
         this.updateUI();
     }
 
-    fitToWidth() {
-        if (!this.pdfViewer.querySelector('.pdf-page')) return;
-        
-        const pageElement = this.pdfViewer.querySelector('.pdf-page');
-        const containerWidth = this.pdfViewer.clientWidth - 40; // Account for padding
-        const pageWidth = pageElement.clientWidth;
-        
-        this.scale = (containerWidth / pageWidth) * this.scale;
-        this.renderCurrentPage();
+    async fitToWidth() {
+        if (!this.pdfDocument) return;
+        const container = this.pdfViewer || this.viewerContainer || document.body;
+        const containerWidth = Math.max(100, (container.clientWidth || 0) - 40);
+        let baseWidth = this.basePageWidth;
+        if (!baseWidth) {
+            try {
+                const first = await this.pdfDocument.getPage(1);
+                baseWidth = first.getViewport({ scale: 1.0 }).width;
+                this.basePageWidth = baseWidth;
+            } catch (e) {
+                // Fallback: estimate from current element width and scale
+                const el = this.pdfViewer.querySelector('.pdf-page');
+                if (el && this.scale) baseWidth = el.clientWidth / this.scale;
+            }
+        }
+        if (!baseWidth) return;
+        this.scale = Math.max(0.5, Math.min(3.0, containerWidth / baseWidth));
+        this.renderDocument();
         this.updateUI();
     }
 
