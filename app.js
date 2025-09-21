@@ -529,6 +529,40 @@ class PDFAnswerSpacer {
         }
     }
 
+    // Re-render a single page inside the continuous viewer without resetting scroll
+    async rerenderPage(pageNumber, options = {}) {
+        if (!this.pdfDocument) return;
+        const interactive = options.interactive === true;
+        const token = ++this.renderToken;
+        const prevScrollTop = this.viewerContainer ? this.viewerContainer.scrollTop : 0;
+        try {
+            const page = await this.pdfDocument.getPage(pageNumber);
+            const viewport = page.getViewport({ scale: this.scale });
+            const spacers = this.spacers.get(pageNumber) || [];
+            let pageContainer;
+            if (spacers.length === 0) {
+                pageContainer = await this.buildPageWithoutSpacers(page, viewport, pageNumber);
+            } else {
+                pageContainer = await this.buildPageWithSpacers(page, viewport, spacers, pageNumber);
+            }
+            if (token !== this.renderToken) return; // aborted by a newer render
+            const existing = this.pdfViewer.querySelector(`.pdf-page[data-page-number="${pageNumber}"]`);
+            if (existing && existing.parentNode === this.pdfViewer) {
+                this.pdfViewer.replaceChild(pageContainer, existing);
+            } else {
+                // Fallback: if not present, append without nuking scroll/content
+                this.pdfViewer.appendChild(pageContainer);
+            }
+        } catch (e) {
+            console.error('rerenderPage error', e);
+            if (!interactive) this.showError('Failed to update page: ' + e.message);
+        } finally {
+            if (this.viewerContainer) {
+                requestAnimationFrame(() => { this.viewerContainer.scrollTop = prevScrollTop; });
+            }
+        }
+    }
+
     async buildPageWithoutSpacers(page, viewport, pageNumber) {
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
@@ -899,7 +933,7 @@ class PDFAnswerSpacer {
         };
         
         this.addSpacerToPage(pageNum, spacer);
-        await this.renderDocument();
+        await this.rerenderPage(pageNum, { interactive: true });
         this.selectSpacer(spacer.id);
         this.saveSettings();
     }
@@ -974,7 +1008,7 @@ class PDFAnswerSpacer {
             if (original) {
                 const copy = { ...original, id: Date.now().toString(), y: Math.max(0, original.y + 20) };
                 spacers.push(copy);
-                this.renderCurrentPage({ interactive: true });
+                this.rerenderPage(pageNumber, { interactive: true });
                 this.selectSpacer(copy.id);
                 this.saveSettings();
                 return;
@@ -998,11 +1032,13 @@ class PDFAnswerSpacer {
     }
 
     deleteSpacer(spacerId) {
-        // Find and remove spacer
+        // Find and remove spacer, remembering its page number
+        let foundPage = null;
         for (let [pageNumber, spacers] of this.spacers) {
             const index = spacers.findIndex(s => s.id === spacerId);
             if (index !== -1) {
                 spacers.splice(index, 1);
+                foundPage = pageNumber;
                 if (spacers.length === 0) {
                     this.spacers.delete(pageNumber);
                 }
@@ -1015,7 +1051,11 @@ class PDFAnswerSpacer {
             this.updateSpacerProperties();
         }
         
-        this.renderCurrentPage();
+        if (foundPage) {
+            this.rerenderPage(foundPage, { interactive: true });
+        } else {
+            this.renderDocument();
+        }
         this.saveSettings();
     }
 
@@ -1094,7 +1134,7 @@ class PDFAnswerSpacer {
     updateSpacerProperty(spacerId, property, value, options = {}) {
         const immediate = options.immediate !== undefined ? options.immediate : true;
         // Find and update spacer
-        for (let spacers of this.spacers.values()) {
+        for (let [pageNumber, spacers] of this.spacers) {
             const spacer = spacers.find(s => s.id === spacerId);
             if (spacer) {
                 spacer[property] = value;
@@ -1109,21 +1149,29 @@ class PDFAnswerSpacer {
                     this.lastSpacerPreset.gridSize = value;
                 }
                 if (immediate) {
-                    this.renderDocument();
+                    this.rerenderPage(pageNumber, { interactive: true });
                     this.saveSettings();
                 } else {
-                    this.scheduleRender();
+                    this.schedulePageRender(pageNumber);
                 }
                 break;
             }
         }
     }
 
-    scheduleRender() {
+    schedulePageRender(pageNumber) {
+        this._pendingPage = pageNumber;
         if (this._renderRAF) return;
         this._renderRAF = requestAnimationFrame(() => {
             this._renderRAF = null;
-            this.renderDocument();
+            const p = this._pendingPage;
+            this._pendingPage = null;
+            if (typeof p === 'number') {
+                this.rerenderPage(p, { interactive: true });
+            } else {
+                // Fallback to full render if page unknown
+                this.renderDocument();
+            }
         });
     }
 
@@ -1951,7 +1999,8 @@ class PDFAnswerSpacer {
         }
         if (this.dragGhost && this.dragGhost.parentNode) this.dragGhost.parentNode.removeChild(this.dragGhost);
         this.dragGhost = null;
-        this.renderDocument();
+        const pageNum = this.getPageNumberForSpacer(id) || this.currentPage;
+        this.rerenderPage(pageNum, { interactive: true });
         this.saveSettings();
     }
 
@@ -1998,8 +2047,16 @@ class PDFAnswerSpacer {
         }
         if (this.resizeGhost && this.resizeGhost.parentNode) this.resizeGhost.parentNode.removeChild(this.resizeGhost);
         this.resizeGhost = null;
-        this.renderDocument();
+        const pageNum = this.getPageNumberForSpacer(id) || this.currentPage;
+        this.rerenderPage(pageNum, { interactive: true });
         this.saveSettings();
+    }
+
+    getPageNumberForSpacer(spacerId) {
+        for (let [pageNumber, spacers] of this.spacers) {
+            if (spacers.some(s => s.id === spacerId)) return pageNumber;
+        }
+        return null;
     }
 
     getSelectedOr(id) {
