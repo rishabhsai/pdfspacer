@@ -16,6 +16,7 @@ class PDFAnswerSpacer {
         this.showPlacementGuide = false;
         this.lastSpacerPreset = { style: 'plain', ruleSpacing: 20, dotPitch: 10, gridSize: 20 };
         this.exportOptions = { mode: 'paginated', continueAcross: true, dpi: 2 };
+        this._suppressPageClickUntil = 0; // suppress add-on-click immediately after drag/resize
         
         this.initializeElements();
         this.bindEvents();
@@ -593,6 +594,9 @@ class PDFAnswerSpacer {
             spacerElement.appendChild(label);
             spacerElement.addEventListener('click', (e) => { e.stopPropagation(); this.selectSpacer(spacer.id); });
             spacerElement.addEventListener('mousedown', (e) => {
+                // Suppress next page click to avoid accidental add
+                this._suppressPageClickUntil = Date.now() + 250;
+                e.stopPropagation();
                 if (e.target.classList.contains('spacer-handle')) {
                     this.startResizeSpacer(spacer.id, e);
                 } else {
@@ -731,6 +735,8 @@ class PDFAnswerSpacer {
             });
             
             spacerElement.addEventListener('mousedown', (e) => {
+                this._suppressPageClickUntil = Date.now() + 250;
+                e.stopPropagation();
                 if (e.target.classList.contains('spacer-handle')) {
                     this.startResizeSpacer(spacer.id, e);
                 } else {
@@ -856,6 +862,8 @@ class PDFAnswerSpacer {
 
 
     handlePageClick(e) {
+        // Guard: ignore synthetic clicks during/after interactions
+        if (Date.now() < this._suppressPageClickUntil) return;
         if (this.currentTool === 'addSpace') {
             this.handleAddSpaceClick(e);
         } else if (this.currentTool === 'text') {
@@ -864,6 +872,11 @@ class PDFAnswerSpacer {
     }
 
     async handleAddSpaceClick(e) {
+        if (Date.now() < this._suppressPageClickUntil) return;
+        if (e.target && typeof e.target.closest === 'function') {
+            const onSpacer = e.target.closest('.spacer');
+            if (onSpacer) return;
+        }
         const pageContainer = e.currentTarget;
         const rect = pageContainer.getBoundingClientRect();
         const clickY = e.clientY - rect.top;
@@ -1907,6 +1920,8 @@ class PDFAnswerSpacer {
     }
 
     startDragSpacer(spacerId, e) {
+        // Ensure page click is suppressed during this interaction
+        this._suppressPageClickUntil = Date.now() + 250;
         this.draggingSpacer = spacerId;
         this.dragStartY = e.clientY;
         this.dragStartSpacerY = this.getSpacerProperty(spacerId, 'y');
@@ -1940,6 +1955,7 @@ class PDFAnswerSpacer {
     }
 
     stopDragSpacer = () => {
+        this._suppressPageClickUntil = Date.now() + 250;
         const id = this.draggingSpacer;
         this.draggingSpacer = null;
         document.removeEventListener('mousemove', this.handleSpacerDrag);
@@ -1956,6 +1972,7 @@ class PDFAnswerSpacer {
     }
 
     startResizeSpacer(spacerId, e) {
+        this._suppressPageClickUntil = Date.now() + 250;
         this.resizingSpacer = spacerId;
         this.resizeStartY = e.clientY;
         this.resizeStartHeight = this.getSpacerProperty(spacerId, 'height');
@@ -1987,6 +2004,7 @@ class PDFAnswerSpacer {
     }
 
     stopResizeSpacer = () => {
+        this._suppressPageClickUntil = Date.now() + 250;
         const id = this.resizingSpacer;
         this.resizingSpacer = null;
         document.removeEventListener('mousemove', this.handleSpacerResize);
