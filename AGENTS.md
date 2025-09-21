@@ -1,17 +1,5 @@
 # Repository Guidelines
 
-## Scope
-- Applies to the entire repository (root scope). Treat these rules as authoritative for all files unless a more specific AGENTS.md exists in a subfolder.
-- Keep this project zero-dependency and browser-only. Do not introduce build steps or package managers.
-
-## Agent Operating Notes
-- Prefer surgical, minimal diffs; preserve file names and public behavior unless explicitly requested.
-- Do not change CDN library versions unless asked; pin exact versions when updating.
-- Avoid adding frameworks, bundlers, or polyfills. Stick to DOM APIs and small helpers.
-- If UI/behavior changes, update `README.md` and this AGENTS.md accordingly.
-- Validate locally with a simple static server; avoid network calls beyond the pinned CDNs already referenced in `index.html`.
-
-
 ## Project Structure & Module Organization
 - `index.html` — main application UI; loads PDF.js and jsPDF from CDNs and `app.js`.
 - `app.js` — core logic (`PDFAnswerSpacer` class), rendering, spacer tools, and export.
@@ -27,14 +15,6 @@ Keep the app zero‑dependency and browser‑only. If you refactor, preserve a C
   - Or open files directly: `index.html` or `demo.html` in a browser.
 - Manual sanity checks:
   - Load a multi‑page PDF, add/resize spacers, navigate pages, export, and verify spacing in the output PDF.
-
-### Manual Validation Checklist
-- Load 10–30 page PDF; scroll performance is smooth.
-- Add, drag, resize spacers; click-vs-drag threshold prevents accidental moves.
-- Toggle Page Break overlays; visual guides match A4 breaks at current zoom.
-- Export Paginated A4 (default): continuous flow across source pages; check page boundaries.
-- Export Single Long Page: one tall page; verify image quality and scaling.
-- Re-open the app; last-used spacer preset persists; context menu actions work (edit/duplicate/delete).
 
 Export
 - Open Export dialog from `Export PDF`.
@@ -81,7 +61,3 @@ Known toggles and UX
 - Libraries are version‑pinned via CDN; update versions deliberately and test large PDFs.
 - Handle user PDFs locally; do not transmit files or add network calls.
 - Avoid eval/dynamic script injection; keep DOM interactions scoped.
-
-### Pinned CDN Versions
-- `pdf.js`: `3.11.174` (cdnjs)
-- `jsPDF`: `2.5.1` (cdnjs)
