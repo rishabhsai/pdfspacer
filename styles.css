@@ -798,7 +798,69 @@ h1 {
 }
 
 .segment input:checked+span {
-    background: #fff;
-    color: #2c3e50;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    background: #3498db;
+    color: #fff;
+    box-shadow: 0 1px 3px rgba(52, 152, 219, 0.3);
+    font-weight: 500;
+}
+/* Social Feedback Links */
+.feedback-links {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid #e3e7ee;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.feedback-label {
+    font-weight: 500;
+}
+
+.social-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    color: #475569;
+    transition: all 0.2s ease;
+}
+
+.social-icon svg {
+    width: 14px;
+    height: 14px;
+}
+
+.social-icon:hover {
+    background: #e2e8f0;
+    color: #1e293b;
+    transform: translateY(-1px);
+}
+
+.social-icon.twitter:hover {
+    color: #000;
+    background: #e2e8f0;
+}
+
+.social-icon.email:hover {
+    color: #ea4335;
+    background: #fee2e2;
+}
+
+.feedback-email {
+    color: #64748b;
+    text-decoration: none;
+    font-size: 13px;
+    margin-left: 4px;
+    transition: color 0.2s;
+}
+
+.feedback-email:hover {
+    color: #3498db;
+    text-decoration: underline;
 }
