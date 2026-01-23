@@ -1626,7 +1626,14 @@ class PDFAnswerSpacer {
 
             // Use Vector export for High Quality (DPI 3)
             if (dpi >= 3 && window.PDFLib) {
-                await this.exportPDFVector(progressOverlay, options);
+                try {
+                    console.log(`Attempting vector export with data size: ${this.pdfData ? this.pdfData.byteLength : 'null'}`);
+                    await this.exportPDFVector(progressOverlay, options);
+                } catch (vectorError) {
+                    console.error('Vector export failed, falling back to raster:', vectorError);
+                    // Fallback to raster
+                    await this.exportPDFPaginated(progressOverlay, options);
+                }
             } else if (mode === 'long') {
                 await this.exportPDFSingleLong(progressOverlay, options);
             } else {
