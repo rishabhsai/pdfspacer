@@ -70,7 +70,9 @@ class PDFAnswerSpacer {
             progressOverlay.querySelector('.progress-fill').style.width = progress + '%';
 
             const page = await this.pdfDocument.getPage(pageNum);
-            const viewport = page.getViewport({ scale: 1.0 });
+            // Render at 3x scale for high quality export (216 DPI instead of 72 DPI)
+            const RENDER_SCALE = 3.0;
+            const viewport = page.getViewport({ scale: RENDER_SCALE });
             const pageSpacers = this.spacers.get(pageNum) || [];
 
             if (pageSpacers.length === 0) {
@@ -144,7 +146,9 @@ class PDFAnswerSpacer {
             progressOverlay.querySelector('.progress-fill').style.width = progress + '%';
 
             const page = await this.pdfDocument.getPage(pageNum);
-            const viewport = page.getViewport({ scale: 1.0 });
+            // Render at 3x scale for high quality export (216 DPI instead of 72 DPI)
+            const RENDER_SCALE = 3.0;
+            const viewport = page.getViewport({ scale: RENDER_SCALE });
             const pageSpacers = this.spacers.get(pageNum) || [];
 
             if (pageSpacers.length === 0) {
