@@ -115,10 +115,14 @@ h1 {
 .dropdown-content::before {
     content: '';
     position: absolute;
-    top: -12px;
-    left: -10px;
-    right: -10px;
-    height: 16px;
+    top: -20px;
+    /* Overlap the button significantly */
+    left: 0;
+    right: 0;
+    height: 30px;
+    /* Cover the gap and part of button */
+    background: transparent;
+    /* Ensure it catches mouse events */
 }
 
 .dropdown:hover .dropdown-content,
@@ -803,6 +807,7 @@ h1 {
     box-shadow: 0 1px 3px rgba(52, 152, 219, 0.3);
     font-weight: 500;
 }
+
 /* Social Feedback Links */
 .feedback-links {
     margin-top: 24px;
