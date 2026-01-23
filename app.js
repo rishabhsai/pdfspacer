@@ -754,30 +754,46 @@ class PDFAnswerSpacer {
         pageContainer.className = 'pdf-page reflowed';
         pageContainer.style.width = viewport.width + 'px';
         pageContainer.dataset.pageNumber = pageNumber;
-        let currentY = 0;
-        let cumulativeOffset = 0;
+
+        const scale = viewport.scale;
+
+        let currentY = 0; // Unscaled PDF coords
+        let cumulativeOffsetVisual = 0; // Scaled visual pixels
+
         for (const spacer of sortedSpacers) {
+            // spacer.y is unscaled
             if (spacer.y > currentY) {
-                const contentHeight = spacer.y - currentY;
-                const contentCanvas = await this.createContentCanvas(page, viewport, currentY, contentHeight);
+                const contentHeightUnscaled = spacer.y - currentY;
+                // Render content slice (expects SCALED coordinates)
+                const startYVisual = currentY * scale;
+                const heightVisual = contentHeightUnscaled * scale;
+
+                const contentCanvas = await this.createContentCanvas(page, viewport, startYVisual, heightVisual);
                 const contentElement = document.createElement('div');
                 contentElement.className = 'content-segment';
                 contentElement.style.position = 'absolute';
                 contentElement.style.left = '0';
-                contentElement.style.top = (currentY + cumulativeOffset) + 'px';
+                // Position is based on SCALED Y + Cumulative Offset
+                const topVisual = (currentY * scale) + cumulativeOffsetVisual;
+                contentElement.style.top = topVisual + 'px';
                 contentElement.style.width = viewport.width + 'px';
-                contentElement.style.height = contentHeight + 'px';
+                contentElement.style.height = heightVisual + 'px';
                 contentElement.appendChild(contentCanvas);
                 pageContainer.appendChild(contentElement);
             }
+
+            const spacerHeightVisual = spacer.height * scale;
+
             const spacerElement = document.createElement('div');
             spacerElement.className = `spacer ${spacer.style}`;
             spacerElement.dataset.spacerId = spacer.id;
             spacerElement.style.position = 'absolute';
             spacerElement.style.left = '0';
-            spacerElement.style.top = (spacer.y + cumulativeOffset) + 'px';
+
+            const spacerTopVisual = (spacer.y * scale) + cumulativeOffsetVisual;
+            spacerElement.style.top = spacerTopVisual + 'px';
             spacerElement.style.width = viewport.width + 'px';
-            spacerElement.style.height = spacer.height + 'px';
+            spacerElement.style.height = spacerHeightVisual + 'px';
             if (spacer.style === 'ruled') {
                 spacerElement.style.setProperty('--rule-spacing', spacer.ruleSpacing + 'px');
             } else if (spacer.style === 'dot-grid') {
@@ -805,22 +821,31 @@ class PDFAnswerSpacer {
             });
             pageContainer.appendChild(spacerElement);
             currentY = spacer.y;
-            cumulativeOffset += spacer.height;
+            cumulativeOffsetVisual += spacerHeightVisual;
         }
-        if (currentY < viewport.height) {
-            const remainingHeight = viewport.height - currentY;
-            const contentCanvas = await this.createContentCanvas(page, viewport, currentY, remainingHeight);
+
+        // Handle remaining content after last spacer
+        const pageHeightUnscaled = viewport.height / scale; // viewport.height is scaled
+
+        if (currentY < pageHeightUnscaled) {
+            const remainingHeightUnscaled = pageHeightUnscaled - currentY;
+            const remainingHeightVisual = remainingHeightUnscaled * scale;
+            const startYVisual = currentY * scale;
+
+            const contentCanvas = await this.createContentCanvas(page, viewport, startYVisual, remainingHeightVisual);
             const contentElement = document.createElement('div');
             contentElement.className = 'content-segment';
             contentElement.style.position = 'absolute';
             contentElement.style.left = '0';
-            contentElement.style.top = (currentY + cumulativeOffset) + 'px';
+            const topVisual = (currentY * scale) + cumulativeOffsetVisual;
+            contentElement.style.top = topVisual + 'px';
             contentElement.style.width = viewport.width + 'px';
-            contentElement.style.height = remainingHeight + 'px';
+            contentElement.style.height = remainingHeightVisual + 'px';
             contentElement.appendChild(contentCanvas);
             pageContainer.appendChild(contentElement);
         }
-        const totalHeight = viewport.height + cumulativeOffset;
+
+        const totalHeight = viewport.height + cumulativeOffsetVisual;
         pageContainer.style.height = totalHeight + 'px';
         pageContainer.addEventListener('click', (e) => this.handlePageClick(e));
         pageContainer.addEventListener('contextmenu', (e) => this.handlePageContextMenu(e));
@@ -1079,21 +1104,28 @@ class PDFAnswerSpacer {
         }
         const pageContainer = e.currentTarget;
         const rect = pageContainer.getBoundingClientRect();
+        // clickY is in visual pixels
         const clickY = e.clientY - rect.top;
 
-        // Calculate the original Y position (accounting for any existing spacers above)
+        // Calculate the original Y position (account for spacers and SCALE)
+        // We store spacers in Scale 1.0 coords.
+        // Convert clickY to unscaled PDF coords.
+        const scale = this.scale || 1.0;
+        const clickYUnscaled = clickY / scale;
+
         const pageNum = parseInt(pageContainer.dataset.pageNumber, 10) || this.currentPage;
         const pageSpacers = this.spacers.get(pageNum) || [];
         const sortedSpacers = [...pageSpacers].sort((a, b) => a.y - b.y);
 
-        let originalY = clickY;
-        let cumulativeOffset = 0;
+        let originalY = clickYUnscaled;
+        let cumulativeOffset = 0; // In unscaled units
 
         // Subtract the cumulative offset from spacers above this click point
         for (const spacer of sortedSpacers) {
-            if (spacer.y + cumulativeOffset < clickY) {
+            // spacer.y and spacer.height are unscaled
+            if (spacer.y + cumulativeOffset < clickYUnscaled) {
                 cumulativeOffset += spacer.height;
-                originalY = clickY - cumulativeOffset;
+                originalY = clickYUnscaled - cumulativeOffset;
             } else {
                 break;
             }
@@ -1554,6 +1586,18 @@ class PDFAnswerSpacer {
         if (!this.pdfDocument) {
             this.showError('No PDF loaded');
             return;
+        }
+
+        // Ensure raw data is available for vector export
+        if (!this.pdfData && this._idbGet) {
+            try {
+                const rec = await this._idbGet('currentPDF');
+                if (rec && rec.data) {
+                    this.pdfData = new Uint8Array(rec.data);
+                }
+            } catch (e) {
+                console.warn('Failed to restore raw PDF data for export', e);
+            }
         }
 
         // Check if jsPDF is available
@@ -2204,7 +2248,9 @@ class PDFAnswerSpacer {
             this.resizeGhost = document.createElement('div');
             this.resizeGhost.className = 'spacer-ghost';
             this.resizeGhost.style.top = `${parseInt(el?.style.top || '0', 10)}px`;
-            this.resizeGhost.style.height = `${this.resizeStartHeight}px`;
+            // Ghost follows visual dimensions
+            const scale = this.scale || 1.0;
+            this.resizeGhost.style.height = `${this.resizeStartHeight * scale}px`;
             container.appendChild(this.resizeGhost);
         }
     }
@@ -2212,12 +2258,15 @@ class PDFAnswerSpacer {
     handleSpacerResize = (e) => {
         if (!this.resizingSpacer) return;
 
-        const deltaY = e.clientY - this.resizeStartY;
-        const newHeight = Math.max(20, this.resizeStartHeight + deltaY);
+        const scale = this.scale || 1.0;
+        const deltaYVisual = e.clientY - this.resizeStartY;
+        const deltaYUnscaled = deltaYVisual / scale;
+
+        const newHeightUnscaled = Math.max(10, this.resizeStartHeight + deltaYUnscaled);
 
         // Only move ghost; apply on release
-        if (this.resizeGhost) this.resizeGhost.style.height = `${newHeight}px`;
-        this.pendingHeight = newHeight;
+        if (this.resizeGhost) this.resizeGhost.style.height = `${newHeightUnscaled * scale}px`;
+        this.pendingHeight = newHeightUnscaled;
     }
 
     stopResizeSpacer = () => {
