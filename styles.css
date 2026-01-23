@@ -39,7 +39,7 @@ body {
     justify-content: space-between;
     align-items: center;
     flex-shrink: 0;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .header-left {
@@ -65,14 +65,17 @@ h1 {
     gap: 10px;
 }
 
-.zoom-controls, .page-controls {
+.zoom-controls,
+.page-controls {
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
 /* Hide legacy page controls in continuous mode */
-.page-controls { display: none; }
+.page-controls {
+    display: none;
+}
 
 /* Buttons */
 .btn {
@@ -100,26 +103,26 @@ h1 {
     position: absolute;
     right: 0;
     background-color: white;
-    min-width: 160px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    min-width: 180px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     border-radius: 6px;
     border: 1px solid #e0e0e0;
     z-index: 1000;
-    top: 100%;
-    padding-top: 4px; /* Use padding instead of margin to maintain hover */
+    top: calc(100% + 4px);
 }
 
-/* Add invisible bridge between button and dropdown */
+/* Invisible bridge to maintain hover when moving from button to dropdown */
 .dropdown-content::before {
     content: '';
     position: absolute;
-    top: -4px;
-    left: 0;
-    right: 0;
-    height: 4px;
+    top: -12px;
+    left: -10px;
+    right: -10px;
+    height: 16px;
 }
 
-.dropdown:hover .dropdown-content {
+.dropdown:hover .dropdown-content,
+.dropdown:focus-within .dropdown-content {
     display: block;
 }
 
@@ -154,7 +157,9 @@ h1 {
     background: #fff;
 }
 
-.file-controls .select-compact { margin-left: 6px; }
+.file-controls .select-compact {
+    margin-left: 6px;
+}
 
 .dropdown-item:last-child {
     border-radius: 0 0 6px 6px;
@@ -188,8 +193,15 @@ h1 {
     background: #e74c3c;
     color: #fff;
 }
-.btn-danger:hover { background: #c0392b; }
-.btn-sm { padding: 6px 10px; font-size: 13px; }
+
+.btn-danger:hover {
+    background: #c0392b;
+}
+
+.btn-sm {
+    padding: 6px 10px;
+    font-size: 13px;
+}
 
 .btn-icon {
     padding: 8px 12px;
@@ -358,7 +370,7 @@ h1 {
 
 .pdf-page {
     margin-bottom: 20px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     border-radius: 4px;
     position: relative;
     background: white;
@@ -393,11 +405,12 @@ h1 {
     border-top: 2px dashed rgba(231, 76, 60, 0.8);
     pointer-events: none;
 }
+
 .page-break-label {
     position: absolute;
     right: 8px;
     top: -10px;
-    background: rgba(255,255,255,0.9);
+    background: rgba(255, 255, 255, 0.9);
     color: #e74c3c;
     font-size: 11px;
     padding: 2px 6px;
@@ -426,8 +439,13 @@ h1 {
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 .no-content-icon {
@@ -472,9 +490,10 @@ h1 {
 
 .spacer-ghost {
     position: absolute;
-    left: 0; right: 0;
-    background: rgba(52,152,219,0.28);
-    border: 2px dashed rgba(52,152,219,0.95);
+    left: 0;
+    right: 0;
+    background: rgba(52, 152, 219, 0.28);
+    border: 2px dashed rgba(52, 152, 219, 0.95);
     pointer-events: none;
     z-index: 1100;
 }
@@ -485,6 +504,7 @@ h1 {
     gap: 8px;
     margin-top: 10px;
 }
+
 .btn-icon.small {
     width: 28px;
     height: 28px;
@@ -494,6 +514,7 @@ h1 {
     border: 1px solid #e0e0e0;
     border-radius: 6px;
 }
+
 .btn-icon.small:hover {
     background: #e9ecef;
 }
@@ -503,23 +524,21 @@ h1 {
 }
 
 .spacer.ruled {
-    background: 
-        repeating-linear-gradient(
-            to bottom,
+    background:
+        repeating-linear-gradient(to bottom,
             transparent,
             transparent calc(var(--rule-spacing) - 1px),
-            #ddd var(--rule-spacing)
-        );
+            #ddd var(--rule-spacing));
 }
 
 .spacer.dot-grid {
-    background: 
+    background:
         radial-gradient(circle, #ddd 1px, transparent 1px);
     background-size: var(--dot-pitch) var(--dot-pitch);
 }
 
 .spacer.squared {
-    background: 
+    background:
         linear-gradient(to right, #ddd 1px, transparent 1px),
         linear-gradient(to bottom, #ddd 1px, transparent 1px);
     background-size: var(--grid-size) var(--grid-size);
@@ -573,7 +592,7 @@ h1 {
     background: white;
     border: 1px solid #ddd;
     border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     z-index: 2000;
     min-width: 120px;
 }
@@ -603,14 +622,15 @@ h1 {
     .sidebar {
         width: 240px;
     }
-    
+
     .header {
         flex-direction: column;
         gap: 12px;
         padding: 12px;
     }
-    
-    .header-left, .header-right {
+
+    .header-left,
+    .header-right {
         flex-direction: column;
         gap: 12px;
     }
@@ -642,7 +662,7 @@ h1 {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0,0,0,0.5);
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -654,7 +674,7 @@ h1 {
     padding: 30px;
     border-radius: 8px;
     text-align: center;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
 .progress-bar {
@@ -675,24 +695,35 @@ h1 {
 /* Modal */
 .modal-overlay {
     position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.45);
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.45);
     display: none;
     align-items: center;
     justify-content: center;
     z-index: 4000;
 }
-.modal-overlay.show { display: flex; }
+
+.modal-overlay.show {
+    display: flex;
+}
+
 .modal-content {
     background: #fff;
     padding: 20px;
     border-radius: 12px;
     min-width: 380px;
-    box-shadow: 0 16px 40px rgba(0,0,0,0.25);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
 }
 
 /* Modern export dialog */
-.modal-content.modern { padding: 0; overflow: hidden; }
+.modal-content.modern {
+    padding: 0;
+    overflow: hidden;
+}
+
 .modal-content.modern .modal-header {
     display: flex;
     align-items: center;
@@ -700,20 +731,74 @@ h1 {
     padding: 16px 18px;
     border-bottom: 1px solid #eef1f4;
 }
-.modal-content.modern .modal-header h3 { margin: 0; color: #2c3e50; font-size: 16px; }
-.modal-content.modern .modal-body { padding: 16px 18px; }
-.modal-content.modern .modal-actions {
-    display: flex; gap: 8px; justify-content: flex-end; padding: 12px 18px; border-top: 1px solid #eef1f4;
+
+.modal-content.modern .modal-header h3 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 16px;
 }
-.form-row { display: grid; grid-template-columns: 140px 1fr; align-items: center; gap: 10px; margin-bottom: 12px; }
-.field-label { color: #5b6b7b; font-size: 13px; }
-.help-text { color: #95a5a6; font-size: 12px; margin-top: 4px; }
+
+.modal-content.modern .modal-body {
+    padding: 16px 18px;
+}
+
+.modal-content.modern .modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    padding: 12px 18px;
+    border-top: 1px solid #eef1f4;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.field-label {
+    color: #5b6b7b;
+    font-size: 13px;
+}
+
+.help-text {
+    color: #95a5a6;
+    font-size: 12px;
+    margin-top: 4px;
+}
 
 /* Segmented control */
-.segmented { display: inline-flex; background: #f3f4f6; border: 1px solid #e3e7ee; border-radius: 8px; padding: 4px; }
-.segment { position: relative; }
-.segment input { position: absolute; opacity: 0; pointer-events: none; }
-.segment span {
-    display: inline-block; padding: 8px 12px; border-radius: 6px; font-size: 13px; color: #2c3e50; cursor: pointer;
+.segmented {
+    display: inline-flex;
+    background: #f3f4f6;
+    border: 1px solid #e3e7ee;
+    border-radius: 8px;
+    padding: 4px;
 }
-.segment input:checked + span { background: #fff; color: #2c3e50; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+
+.segment {
+    position: relative;
+}
+
+.segment input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.segment span {
+    display: inline-block;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #2c3e50;
+    cursor: pointer;
+}
+
+.segment input:checked+span {
+    background: #fff;
+    color: #2c3e50;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
