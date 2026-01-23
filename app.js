@@ -195,14 +195,17 @@ class PDFAnswerSpacer {
         // Embed pages to draw them multiple times (visual slicing)
         const sourcePages = await pdfDoc.embedPdf(sourcePdfDoc);
 
+        console.log(`Vector export: Source pages ${sourcePages.length}, App pages ${this.totalPages}`);
+        const exportPageCount = Math.min(sourcePages.length, this.totalPages);
+
         const A4_WIDTH = 595.276;
         const A4_HEIGHT = 841.890;
 
         const flowItems = [];
 
-        for (let pageNum = 1; pageNum <= this.totalPages; pageNum++) {
+        for (let pageNum = 1; pageNum <= exportPageCount; pageNum++) {
             // Update progress
-            const progress = (pageNum / this.totalPages) * 100;
+            const progress = (pageNum / exportPageCount) * 100;
             if (progressOverlay) progressOverlay.querySelector('.progress-fill').style.width = progress + '%';
 
             const pageButtonIndex = pageNum - 1;
