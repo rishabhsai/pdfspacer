@@ -326,11 +326,10 @@ class PDFAnswerSpacer {
                     if (spacer.style === 'ruled') {
                         const ruleSpacing = (spacer.ruleSpacing || 25);
                         const numLines = Math.floor(chunkHeight / ruleSpacing);
-                        // Use local coordinates relative to the chunk
-                        // Start Y inside the chunk...
-                        // For simplicity, just horizontal lines
+
                         for (let i = 1; i <= numLines; i++) {
                             const lineY = currentYPos - (i * ruleSpacing);
+                            // Ensure we don't draw below the chunk
                             if (lineY >= drawY) {
                                 currentPage.drawLine({
                                     start: { x: 0, y: lineY },
@@ -341,14 +340,42 @@ class PDFAnswerSpacer {
                             }
                         }
                     } else if (spacer.style === 'dot-grid') {
-                        // Minimal dot grid implementation
                         const pitch = (spacer.dotPitch || 20);
-                        for (let x = 10; x < A4_WIDTH; x += pitch) {
-                            for (let y = drawY + 10; y < currentYPos; y += pitch) {
+                        const startX = 10;
+                        const startY = drawY + 10;
+
+                        for (let y = startY; y < currentYPos; y += pitch) {
+                            for (let x = startX; x < A4_WIDTH - 10; x += pitch) {
                                 currentPage.drawCircle({
-                                    x, y, size: 1, color: rgb(0.8, 0.8, 0.8)
+                                    x: x,
+                                    y: y,
+                                    size: 1,
+                                    color: rgb(0.8, 0.8, 0.8)
                                 });
                             }
+                        }
+                    } else if (spacer.style === 'squared') {
+                        const size = (spacer.gridSize || 20);
+                        const pColor = rgb(0.9, 0.9, 0.9);
+
+                        // Vertical lines
+                        for (let x = 0; x <= A4_WIDTH; x += size) {
+                            currentPage.drawLine({
+                                start: { x: x, y: drawY },
+                                end: { x: x, y: currentYPos },
+                                thickness: 1,
+                                color: pColor
+                            });
+                        }
+
+                        // Horizontal lines
+                        for (let y = drawY; y < currentYPos; y += size) {
+                            currentPage.drawLine({
+                                start: { x: 0, y: y },
+                                end: { x: A4_WIDTH, y: y },
+                                thickness: 1,
+                                color: pColor
+                            });
                         }
                     }
                 }

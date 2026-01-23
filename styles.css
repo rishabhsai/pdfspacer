@@ -864,3 +864,8 @@ h1 {
     color: #3498db;
     text-decoration: underline;
 }
+
+.social-icon svg {
+    width: 16px !important;
+    height: 16px !important;
+}
