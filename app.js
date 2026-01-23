@@ -520,9 +520,13 @@ class PDFAnswerSpacer {
             this.pdfViewer.innerHTML = '';
             if (this.thumbnails) this.thumbnails.innerHTML = '<p class="no-content">Loading thumbnails...</p>';
 
-            const data = new Uint8Array(arrayBuffer);
-            this.pdfData = data; // Store raw data for pdf-lib export
-            this.pdfDocument = await pdfjsLib.getDocument({ data }).promise;
+            // Store raw data for ourselves (Vector export) and IDB BEFORE passing to PDF.js
+            // PDF.js might detach the buffer if it transfers it to a worker
+            this.pdfData = new Uint8Array(arrayBuffer);
+
+            // Create a copy for PDF.js
+            const pdfJsData = new Uint8Array(arrayBuffer.slice(0));
+            this.pdfDocument = await pdfjsLib.getDocument({ data: pdfJsData }).promise;
             this.totalPages = this.pdfDocument.numPages;
             this.currentPage = 1;
             this.spacers.clear();
@@ -570,11 +574,17 @@ class PDFAnswerSpacer {
             if (typeof pdfjsLib === 'undefined') return; // Will try next load if user interacts
             const rec = await this._idbGet('currentPDF');
             if (!rec || !rec.data) return;
-            const data = new Uint8Array(rec.data);
-            this.pdfData = data; // Store raw data for pdf-lib export
+
+            // Keep original data safe
+            const sessionData = new Uint8Array(rec.data);
+            this.pdfData = sessionData;
+
+            // Pass clone to PDF.js
+            const pdfJsData = new Uint8Array(rec.data.slice(0));
+
             this.showLoading(true);
             try {
-                this.pdfDocument = await pdfjsLib.getDocument({ data }).promise;
+                this.pdfDocument = await pdfjsLib.getDocument({ data: pdfJsData }).promise;
                 this.totalPages = this.pdfDocument.numPages;
                 // Precompute base page width
                 try {
