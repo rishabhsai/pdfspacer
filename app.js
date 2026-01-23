@@ -195,7 +195,9 @@ class PDFAnswerSpacer {
         const pdfDoc = await PDFDocument.create();
 
         // Embed pages to draw them multiple times (visual slicing)
-        const sourcePages = await pdfDoc.embedPdf(sourcePdfDoc);
+        // Explicitly get all indices to ensure we don't miss any (fix for single page return issue)
+        const pageIndices = sourcePdfDoc.getPageIndices();
+        const sourcePages = await pdfDoc.embedPdf(sourcePdfDoc, pageIndices);
 
         console.log(`Vector export: Source pages ${sourcePages.length}, App pages ${this.totalPages}`);
         const exportPageCount = Math.min(sourcePages.length, this.totalPages);
@@ -774,6 +776,13 @@ class PDFAnswerSpacer {
 
         const scale = viewport.scale;
 
+        // OPTIMIZATION: Render the full page ONCE to an offscreen canvas
+        const fullPageCanvas = document.createElement('canvas');
+        const fullPageContext = fullPageCanvas.getContext('2d');
+        fullPageCanvas.width = viewport.width;
+        fullPageCanvas.height = viewport.height;
+        await page.render({ canvasContext: fullPageContext, viewport: viewport }).promise;
+
         let currentY = 0; // Unscaled PDF coords
         let cumulativeOffsetVisual = 0; // Scaled visual pixels
 
@@ -785,7 +794,17 @@ class PDFAnswerSpacer {
                 const startYVisual = currentY * scale;
                 const heightVisual = contentHeightUnscaled * scale;
 
-                const contentCanvas = await this.createContentCanvas(page, viewport, startYVisual, heightVisual);
+                // Use cached fullPageCanvas to slice
+                const segmentCanvas = document.createElement('canvas');
+                segmentCanvas.width = viewport.width;
+                segmentCanvas.height = heightVisual;
+                const segmentContext = segmentCanvas.getContext('2d');
+                segmentContext.drawImage(
+                    fullPageCanvas,
+                    0, startYVisual, viewport.width, heightVisual,
+                    0, 0, viewport.width, heightVisual
+                );
+
                 const contentElement = document.createElement('div');
                 contentElement.className = 'content-segment';
                 contentElement.style.position = 'absolute';
@@ -795,7 +814,7 @@ class PDFAnswerSpacer {
                 contentElement.style.top = topVisual + 'px';
                 contentElement.style.width = viewport.width + 'px';
                 contentElement.style.height = heightVisual + 'px';
-                contentElement.appendChild(contentCanvas);
+                contentElement.appendChild(segmentCanvas);
                 pageContainer.appendChild(contentElement);
             }
 
@@ -849,7 +868,17 @@ class PDFAnswerSpacer {
             const remainingHeightVisual = remainingHeightUnscaled * scale;
             const startYVisual = currentY * scale;
 
-            const contentCanvas = await this.createContentCanvas(page, viewport, startYVisual, remainingHeightVisual);
+            // Use cached fullPageCanvas to slice
+            const segmentCanvas = document.createElement('canvas');
+            segmentCanvas.width = viewport.width;
+            segmentCanvas.height = remainingHeightVisual;
+            const segmentContext = segmentCanvas.getContext('2d');
+            segmentContext.drawImage(
+                fullPageCanvas,
+                0, startYVisual, viewport.width, remainingHeightVisual,
+                0, 0, viewport.width, remainingHeightVisual
+            );
+
             const contentElement = document.createElement('div');
             contentElement.className = 'content-segment';
             contentElement.style.position = 'absolute';
@@ -858,7 +887,7 @@ class PDFAnswerSpacer {
             contentElement.style.top = topVisual + 'px';
             contentElement.style.width = viewport.width + 'px';
             contentElement.style.height = remainingHeightVisual + 'px';
-            contentElement.appendChild(contentCanvas);
+            contentElement.appendChild(segmentCanvas);
             pageContainer.appendChild(contentElement);
         }
 
