@@ -189,6 +189,8 @@ class PDFAnswerSpacer {
 
         // 1. Load source PDF
         const sourcePdfDoc = await PDFDocument.load(this.pdfData);
+        console.log(`Vector export: Loaded PDF with ${sourcePdfDoc.getPageCount()} pages`);
+
         // Copy all pages to the new document so we can embed them
         const pdfDoc = await PDFDocument.create();
 
@@ -696,19 +698,18 @@ class PDFAnswerSpacer {
     }
 
     // Render the entire document as a continuous scroll (all pages stacked)
+    // Render the entire document as a continuous scroll (all pages stacked)
     async renderDocument() {
         if (!this.pdfDocument) return;
         const token = ++this.renderToken;
         const prevScrollTop = this.viewerContainer ? this.viewerContainer.scrollTop : 0;
         this.showLoading(true);
+
         try {
-            // Show a local spinner while streaming pages
-            this.pdfViewer.innerHTML = '';
-            const localSpinner = document.createElement('div');
-            localSpinner.className = 'loading';
-            localSpinner.innerHTML = '<div class="spinner"></div><p>Rendering…</p>';
-            this.pdfViewer.appendChild(localSpinner);
+            // Render to fragment first to avoid scroll jumping and blank screen
+            const fragment = document.createDocumentFragment();
             let globalOffset = 0;
+
             for (let p = 1; p <= this.totalPages; p++) {
                 const page = await this.pdfDocument.getPage(p);
                 const viewport = page.getViewport({ scale: this.scale });
@@ -720,15 +721,18 @@ class PDFAnswerSpacer {
                 } else {
                     pageContainer = await this.buildPageWithSpacers(page, viewport, spacers, p);
                 }
+
                 if (token !== this.renderToken) return; // aborted
-                if (localSpinner.parentNode === this.pdfViewer) {
-                    this.pdfViewer.replaceChild(pageContainer, localSpinner);
-                } else {
-                    this.pdfViewer.appendChild(pageContainer);
-                }
+                fragment.appendChild(pageContainer);
+
                 const h = parseFloat(pageContainer.style.height || viewport.height);
                 globalOffset += h;
             }
+
+            // Swap content atomically
+            this.pdfViewer.innerHTML = '';
+            this.pdfViewer.appendChild(fragment);
+
         } catch (e) {
             console.error('renderDocument error', e);
             this.showError('Failed to render document: ' + e.message);
