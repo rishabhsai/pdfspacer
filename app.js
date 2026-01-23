@@ -184,6 +184,185 @@ class PDFAnswerSpacer {
         }
         pdf.save('modified-pdf.pdf');
     }
+    async exportPDFVector(progressOverlay, options = {}) {
+        const { PDFDocument, rgb } = window.PDFLib;
+
+        // 1. Load source PDF
+        const sourcePdfDoc = await PDFDocument.load(this.pdfData);
+        // Copy all pages to the new document so we can embed them
+        const pdfDoc = await PDFDocument.create();
+
+        // Embed pages to draw them multiple times (visual slicing)
+        const sourcePages = await pdfDoc.embedPdf(sourcePdfDoc);
+
+        const A4_WIDTH = 595.276;
+        const A4_HEIGHT = 841.890;
+
+        const flowItems = [];
+
+        for (let pageNum = 1; pageNum <= this.totalPages; pageNum++) {
+            // Update progress
+            const progress = (pageNum / this.totalPages) * 100;
+            if (progressOverlay) progressOverlay.querySelector('.progress-fill').style.width = progress + '%';
+
+            const pageButtonIndex = pageNum - 1;
+            const page = sourcePages[pageButtonIndex];
+            const vw = page.width;
+            const vh = page.height;
+
+            // Get spacers for this page (stored in scale 1.0 coords)
+            const pageSpacers = (this.spacers.get(pageNum) || []).sort((a, b) => a.y - b.y);
+
+            let currentY = 0;
+
+            // Generate slices
+            for (const spacer of pageSpacers) {
+                if (spacer.y > currentY) {
+                    const height = spacer.y - currentY;
+                    flowItems.push({
+                        type: 'slice',
+                        sourcePageIndex: pageButtonIndex,
+                        sourceY: currentY,
+                        width: vw,
+                        height: height
+                    });
+                }
+
+                flowItems.push({
+                    type: 'spacer',
+                    height: spacer.height,
+                    style: spacer.style,
+                    props: spacer
+                });
+
+                currentY = spacer.y;
+            }
+
+            if (currentY < vh) {
+                const height = vh - currentY;
+                flowItems.push({
+                    type: 'slice',
+                    sourcePageIndex: pageButtonIndex,
+                    sourceY: currentY,
+                    width: vw,
+                    height: height
+                });
+            }
+        }
+
+        // Paginate
+        let currentPage = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
+        let currentYPos = A4_HEIGHT;
+
+        for (const item of flowItems) {
+            let remainingHeight = item.height;
+            let itemOffset = 0;
+
+            while (remainingHeight > 0) {
+                const spaceOnPage = currentYPos;
+
+                if (spaceOnPage <= 0.1) {
+                    currentPage = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
+                    currentYPos = A4_HEIGHT;
+                }
+
+                const chunkHeight = Math.min(remainingHeight, currentYPos);
+                const drawY = currentYPos - chunkHeight;
+
+                if (item.type === 'slice') {
+                    const page = sourcePages[item.sourcePageIndex];
+                    const hSrc = page.height;
+                    const wSrc = page.width;
+                    const scale = A4_WIDTH / wSrc;
+
+                    const srcTopY = item.sourceY + itemOffset;
+                    // Calculate visual shift to align the desired slice
+                    // We want source-point (srcTopY) to appear at dest-point (currentYPos)
+                    // Page placement Y usually puts the bottom-left of the page at Y.
+                    // Top of placed page = Y + (hSrc * scale).
+                    // We want Top - (srcTopY * scale) = currentYPos
+                    // Y + (hSrc * scale) - (srcTopY * scale) = currentYPos
+                    // Y = currentYPos - (hSrc - srcTopY) * scale
+
+                    const yShift = currentYPos - (hSrc - srcTopY) * scale;
+
+                    // Clipping magic
+                    // q, re, W, n, ... Q
+                    currentPage.pushOperators(
+                        window.PDFLib.pushGraphicsState(),
+                        window.PDFLib.rectangle(0, drawY, A4_WIDTH, chunkHeight),
+                        window.PDFLib.clip(),
+                        window.PDFLib.endPath()
+                    );
+
+                    currentPage.drawPage(page, {
+                        x: 0,
+                        y: yShift,
+                        width: wSrc * scale,
+                        height: hSrc * scale,
+                    });
+
+                    currentPage.pushOperators(window.PDFLib.popGraphicsState());
+
+                } else if (item.type === 'spacer') {
+                    // Draw spacer styles
+                    const spacer = item.props;
+
+                    // Background/Border
+                    // Since we can't easily draw "dashed" borders with high level API easily without context? 
+                    // Actually pdf-lib `drawRectangle` supports border options.
+                    // But for ruled lines / dots, we need loops.
+
+                    // Plain spacer is just white space (already white page).
+                    // But we should draw the spacer visual if it has one.
+
+                    if (spacer.style === 'ruled') {
+                        const ruleSpacing = (spacer.ruleSpacing || 25);
+                        const numLines = Math.floor(chunkHeight / ruleSpacing);
+                        // Use local coordinates relative to the chunk
+                        // Start Y inside the chunk...
+                        // For simplicity, just horizontal lines
+                        for (let i = 1; i <= numLines; i++) {
+                            const lineY = currentYPos - (i * ruleSpacing);
+                            if (lineY >= drawY) {
+                                currentPage.drawLine({
+                                    start: { x: 0, y: lineY },
+                                    end: { x: A4_WIDTH, y: lineY },
+                                    thickness: 1,
+                                    color: rgb(0.9, 0.9, 0.9),
+                                });
+                            }
+                        }
+                    } else if (spacer.style === 'dot-grid') {
+                        // Minimal dot grid implementation
+                        const pitch = (spacer.dotPitch || 20);
+                        for (let x = 10; x < A4_WIDTH; x += pitch) {
+                            for (let y = drawY + 10; y < currentYPos; y += pitch) {
+                                currentPage.drawCircle({
+                                    x, y, size: 1, color: rgb(0.8, 0.8, 0.8)
+                                });
+                            }
+                        }
+                    }
+                }
+
+                currentYPos -= chunkHeight;
+                remainingHeight -= chunkHeight;
+                itemOffset += chunkHeight;
+            }
+        }
+
+        const pdfBytes = await pdfDoc.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'modified-pdf-vector.pdf';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
     initializeElements() {
         // File controls
         this.pdfInput = document.getElementById('pdfInput');
@@ -342,6 +521,7 @@ class PDFAnswerSpacer {
             if (this.thumbnails) this.thumbnails.innerHTML = '<p class="no-content">Loading thumbnails...</p>';
 
             const data = new Uint8Array(arrayBuffer);
+            this.pdfData = data; // Store raw data for pdf-lib export
             this.pdfDocument = await pdfjsLib.getDocument({ data }).promise;
             this.totalPages = this.pdfDocument.numPages;
             this.currentPage = 1;
@@ -391,6 +571,7 @@ class PDFAnswerSpacer {
             const rec = await this._idbGet('currentPDF');
             if (!rec || !rec.data) return;
             const data = new Uint8Array(rec.data);
+            this.pdfData = data; // Store raw data for pdf-lib export
             this.showLoading(true);
             try {
                 this.pdfDocument = await pdfjsLib.getDocument({ data }).promise;
@@ -1397,7 +1578,12 @@ class PDFAnswerSpacer {
 
         try {
             const mode = options?.mode || 'paginated';
-            if (mode === 'long') {
+            const dpi = options?.dpi || 2;
+
+            // Use Vector export for High Quality (DPI 3)
+            if (dpi >= 3 && window.PDFLib) {
+                await this.exportPDFVector(progressOverlay, options);
+            } else if (mode === 'long') {
                 await this.exportPDFSingleLong(progressOverlay, options);
             } else {
                 await this.exportPDFPaginated(progressOverlay, options);
