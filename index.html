@@ -139,21 +139,13 @@
                     </div>
                 </div>
                 <div class="form-row">
-                    <label for="optDPI" class="field-label">Render Scale</label>
-                    <select id="optDPI" class="select-compact">
-                        <option value="1">1x</option>
-                        <option value="2" selected>2x</option>
-                        <option value="3">3x</option>
-                    </select>
-                    <div class="help-text">Higher is sharper, but increases file size</div>
-                </div>
-                <div class="form-row">
-                    <label for="optQuality" class="field-label">Image Quality</label>
+                    <label for="optQuality" class="field-label">Quality</label>
                     <select id="optQuality" class="select-compact">
-                        <option value="0.6">Small (0.6)</option>
-                        <option value="0.8" selected>Balanced (0.8)</option>
-                        <option value="0.9">High (0.9)</option>
+                        <option value="low">Low — Faster, smaller file</option>
+                        <option value="medium" selected>Medium — Balanced</option>
+                        <option value="high">High — Best quality</option>
                     </select>
+                    <div class="help-text">Higher quality = larger file size</div>
                 </div>
             </div>
             <div class="modal-actions">

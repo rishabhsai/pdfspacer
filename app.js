@@ -33,8 +33,11 @@ class PDFAnswerSpacer {
         }
         const opts = this.exportOptions || { mode: 'paginated', continueAcross: true, dpi: 2, jpegQuality: 0.8 };
         (this.exportModeRadios || []).forEach(r => { r.checked = (r.value === (opts.mode || 'paginated')); });
-        if (this.optDPI) this.optDPI.value = String(opts.dpi || 2);
-        if (this.optQuality) this.optQuality.value = String(opts.jpegQuality || 0.8);
+        // Map stored DPI to quality preset
+        if (this.optQuality) {
+            const dpiToPreset = { 1: 'low', 2: 'medium', 3: 'high' };
+            this.optQuality.value = dpiToPreset[opts.dpi] || 'medium';
+        }
         this.exportDialog.classList.add('show');
         this.exportDialog.style.display = 'flex';
     }
@@ -231,7 +234,6 @@ class PDFAnswerSpacer {
         this.exportCancelBtn = document.getElementById('exportCancelBtn');
         this.exportCloseX = document.getElementById('exportCloseX');
         this.exportModeRadios = document.querySelectorAll('input[name="exportMode"]');
-        this.optDPI = document.getElementById('optDPI');
         this.optQuality = document.getElementById('optQuality');
     }
 
@@ -300,8 +302,16 @@ class PDFAnswerSpacer {
         if (this.exportConfirmBtn) {
             this.exportConfirmBtn.addEventListener('click', () => {
                 const mode = Array.from(this.exportModeRadios || []).find(r => r.checked)?.value || 'paginated';
-                const dpi = parseInt(this.optDPI?.value || '2', 10);
-                const jpegQuality = parseFloat(this.optQuality?.value || '0.8');
+
+                // Map quality preset to DPI and JPEG quality
+                const qualityPreset = this.optQuality?.value || 'medium';
+                const qualityMap = {
+                    low: { dpi: 1, jpegQuality: 0.6 },
+                    medium: { dpi: 2, jpegQuality: 0.8 },
+                    high: { dpi: 3, jpegQuality: 0.9 }
+                };
+                const { dpi, jpegQuality } = qualityMap[qualityPreset] || qualityMap.medium;
+
                 // Always continue across pages by default (option removed from UI)
                 const continueAcross = true;
                 this.exportOptions = { mode, continueAcross, dpi, jpegQuality };
