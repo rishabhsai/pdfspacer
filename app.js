@@ -540,7 +540,12 @@ class PDFAnswerSpacer {
             this.showError('Failed to render document: ' + e.message);
         } finally {
             this.showLoading(false);
-            if (this.viewerContainer) this.viewerContainer.scrollTop = prevScrollTop;
+            // Restore scroll on next frame to ensure DOM is fully laid out
+            if (this.viewerContainer && token === this.renderToken) {
+                requestAnimationFrame(() => {
+                    this.viewerContainer.scrollTop = prevScrollTop;
+                });
+            }
         }
     }
 
