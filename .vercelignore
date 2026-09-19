@@ -1,0 +1,6 @@
+.git
+.vercel
+.env*
+.DS_Store
+AGENTS.md
+README.md

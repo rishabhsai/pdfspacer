@@ -1,90 +1,163 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>How to Add Blank Space in a PDF for Answers | PDFSpacer</title>
-  <meta name="description" content="Step-by-step guide: add blank space anywhere in a PDF for answers or notes without covering text. Free, no login—using PDFSpacer.">
-  <link rel="canonical" href="https://pdfspacer.com/guide">
-  <meta name="robots" content="index, follow">
-  <meta property="og:title" content="How to Add Blank Space in a PDF for Answers">
-  <meta property="og:description" content="Click to insert answer space anywhere in your PDF with PDFSpacer. Free, no login.">
-  <meta property="og:type" content="article">
-  <meta property="og:url" content="https://pdfspacer.com/guide">
-  <meta property="og:image" content="https://pdfspacer.com/og.png">
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; color: #2c3e50; }
-    header { padding: 24px 16px; border-bottom: 1px solid #eef1f4; }
-    header .wrap { max-width: 920px; margin: 0 auto; display:flex; align-items:center; justify-content:space-between; }
-    header a { text-decoration: none; color:#3498db; }
-    .wrap { max-width: 920px; margin: 0 auto; padding: 20px 16px; }
-    h1 { font-size: 28px; margin: 8px 0 12px; }
-    h2 { font-size: 20px; margin: 22px 0 10px; }
-    p { line-height: 1.7; }
-    .btn { display:inline-block; background:#3498db; color:#fff; padding:10px 16px; border-radius:8px; text-decoration:none; }
-    .btn:hover { background:#2980b9; }
-    ol { padding-left: 20px; }
-    li { margin: 8px 0; }
-    .tip { background:#f8f9fa; border:1px solid #eef1f4; border-radius:8px; padding:12px; margin:16px 0; color:#415166; }
-    footer { border-top:1px solid #eef1f4; margin-top: 20px; }
-  </style>
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "HowTo",
-    "name": "How to add blank space in a PDF for answers",
-    "description": "Use PDFSpacer to insert answer space anywhere in a PDF without covering text.",
-    "image": "https://pdfspacer.com/og.png",
-    "totalTime": "PT1M",
-    "tool": ["PDFSpacer"],
-    "step": [
-      {"@type":"HowToStep","name":"Open PDFSpacer","text":"Go to pdfspacer.com and click Load PDF."},
-      {"@type":"HowToStep","name":"Insert space","text":"Select the 📏 tool and click where you want space."},
-      {"@type":"HowToStep","name":"Adjust","text":"Resize or move the spacer, choose Plain/Ruled/Dot grid."},
-      {"@type":"HowToStep","name":"Export","text":"Click Export PDF and choose Paginated A4 or Single Long Page."}
-    ]
-  }
-  </script>
-  
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How to Add Space Between Questions in a PDF — PDFSpacer</title>
+    <meta name="description" content="Make more room to write on PDF worksheets and past papers. Learn how to insert blank space, add answer lines and export a PDF for printing or notes.">
+    <link rel="canonical" href="https://www.pdfspacer.com/guide">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <meta property="og:title" content="How to Add Space Between Questions in a PDF — PDFSpacer">
+    <meta property="og:description" content="A practical guide to adding answer space, ruled lines and room for notes between existing PDF questions.">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="PDFSpacer">
+    <meta property="og:url" content="https://www.pdfspacer.com/guide">
+    <meta property="og:image" content="https://www.pdfspacer.com/og.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="A PDF worksheet with extra writing space inserted between questions.">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="How to Add Space Between Questions in a PDF — PDFSpacer">
+    <meta name="twitter:description" content="Insert blank space for answers and notes in a PDF worksheet. Free, local processing, no signup.">
+    <meta name="twitter:image" content="https://www.pdfspacer.com/og.png">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; color: #2c3e50; background: #f8f9fa; line-height: 1.75; }
+        header { border-bottom: 1px solid #dce3e9; }
+        header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+        .wrap { max-width: 780px; margin: 0 auto; padding: 24px; }
+        main.wrap { padding-top: 40px; }
+        h1 { font-size: clamp(28px, 5vw, 40px); line-height: 1.2; margin: 8px 0 24px; }
+        h2 { font-size: 24px; line-height: 1.3; margin: 40px 0 16px; scroll-margin-top: 24px; }
+        h3 { font-size: 18px; margin: 24px 0 8px; }
+        p { margin: 0 0 16px; }
+        a { color: #176ba0; text-underline-offset: 3px; }
+        a:hover { color: #124f76; }
+        .btn { display: inline-block; background: #176ba0; color: #fff; padding: 10px 16px; border-radius: 6px; text-decoration: none; font-weight: 600; }
+        .btn:hover { background: #124f76; color: #fff; }
+        ol, ul { padding-left: 24px; }
+        li { margin: 10px 0; }
+        nav { border-block: 1px solid #dce3e9; padding: 16px 0; margin: 32px 0; }
+        nav ul { margin: 0; }
+        .example { padding: 20px; background: #edf3f7; border: 1px solid #dce3e9; border-radius: 6px; }
+        footer { border-top: 1px solid #dce3e9; margin-top: 40px; }
+        footer p { font-size: 14px; margin: 0; }
+        @media (max-width: 480px) { .wrap { padding: 20px; } header .wrap { flex-wrap: wrap; } }
+    </style>
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "@id": "https://www.pdfspacer.com/guide#webpage",
+        "url": "https://www.pdfspacer.com/guide",
+        "name": "How to add space between questions in a PDF",
+        "description": "A practical guide to adding answer space, ruled lines and room for notes between existing PDF questions.",
+        "isPartOf": {"@id": "https://www.pdfspacer.com/#website"},
+        "about": {"@id": "https://www.pdfspacer.com/#app"},
+        "inLanguage": "en",
+        "breadcrumb": {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                {"@type": "ListItem", "position": 1, "name": "PDFSpacer", "item": "https://www.pdfspacer.com/"},
+                {"@type": "ListItem", "position": 2, "name": "PDF spacing guide", "item": "https://www.pdfspacer.com/guide"}
+            ]
+        }
+    }
+    </script>
 </head>
 <body>
-  <header>
-    <div class="wrap">
-      <a href="/">← Back to PDFSpacer</a>
-      <a class="btn" href="/">Launch App</a>
-    </div>
-  </header>
-  <main class="wrap">
-    <h1>How to add blank space in a PDF for answers</h1>
-    <p>Use PDFSpacer to insert clean, printable space anywhere in your PDF without covering existing text. Perfect for worksheets, exams, and forms.</p>
-
-    <h2>Quick steps</h2>
-    <ol>
-      <li><strong>Load PDF:</strong> Click <em>Load PDF</em> and choose your file.</li>
-      <li><strong>Add Space:</strong> Click the <em>📏</em> tool, then click where you want room for answers.</li>
-      <li><strong>Adjust:</strong> Drag to move, resize using the handle, and choose <em>Plain</em>, <em>Ruled</em>, <em>Dot Grid</em>, or <em>Squared</em>.</li>
-      <li><strong>Export:</strong> Use <em>Export PDF</em> → <em>Paginated A4</em> or <em>Single Long Page</em>. Pick DPI and quality.</li>
-    </ol>
-
-    <div class="tip">Tip: Your work is saved locally. If you close or refresh, PDFSpacer restores your PDF and layout automatically. Use Project → Clear Session to reset.</div>
-
-    <h2>Why PDFSpacer?</h2>
-    <ul>
-      <li>Preserves original text quality — no rasterization.</li>
-      <li>Multiple spacers per page with smart reflow.</li>
-      <li>Answer lines, dot grid, or plain space.</li>
-      <li>Fast export with continuous-flow pagination.</li>
-    </ul>
-
-    <p>
-      Ready to go?
-      <a class="btn" href="/">Open PDFSpacer</a>
-    </p>
-  </main>
-  <footer class="wrap">
-    <p style="color:#7f8c8d; font-size:14px;">© PDFSpacer.com</p>
-  </footer>
+    <header>
+        <div class="wrap">
+            <a href="/">PDFSpacer</a>
+            <a class="btn" href="/">Add space to a PDF</a>
+        </div>
+    </header>
+    <main class="wrap">
+        <h1>How to add space between questions in a PDF</h1>
+        <p>A worksheet can have all the right questions and almost no room for your answers. PDFSpacer inserts
+            writing space at a point you choose and moves the content below down. You can add room for working,
+            written responses or notes inside an existing PDF.</p>
+        <p>The tool is free and runs in your browser. You do not need an account, and your PDF is processed on your device.</p>
+        <nav aria-label="In this guide">
+            <ul>
+                <li><a href="#steps">Insert blank space in four steps</a></li>
+                <li><a href="#worksheets">Answer space for worksheets and past papers</a></li>
+                <li><a href="#notes">Room for notes and diagrams</a></li>
+                <li><a href="#space-or-pages">Spacing, margins and blank pages</a></li>
+                <li><a href="#export">Printing and PDF export</a></li>
+                <li><a href="#questions">Common questions</a></li>
+            </ul>
+        </nav>
+        <h2 id="steps">Insert blank space in four steps</h2>
+        <ol>
+            <li><strong>Open your document.</strong> Go to <a href="/">PDFSpacer</a>, click <em>Choose PDF File</em>
+                or <em>Load PDF</em>, and select a PDF from your device.</li>
+            <li><strong>Choose an insertion point.</strong> Select the ruler tool in the sidebar. Click in a clear
+                horizontal gap below a question, paragraph or diagram. Content below that point moves down.</li>
+            <li><strong>Set the amount and style of space.</strong> Select the spacer to edit its properties.
+                Drag the resize handle to change its height. Choose Plain, Ruled, Dot Grid or Squared.
+                Repeat wherever you need more room.</li>
+            <li><strong>Save the result.</strong> Click <em>Export PDF</em>. Choose <em>Paginated A4</em> for
+                standard printable pages or <em>Single Long Page</em> for a continuous document, then export.</li>
+        </ol>
+        <p>Click between lines, rather than through a line of text. PDFSpacer splits the page at the height you
+            select; it does not automatically detect where a question ends.</p>
+        <h2 id="worksheets">Add answer space to PDF worksheets and past papers</h2>
+        <p>For a maths problem, insert a spacer just below the question and choose <em>Squared</em> for working
+            or <em>Plain</em> for a sketch. For a written response, choose <em>Ruled</em> to add answer lines.
+            Adjust each spacer to suit the expected length of the answer.</p>
+        <div class="example">
+            <strong>Example: a crowded two-question worksheet</strong>
+            <p>Question 2 starts immediately after question 1. Click the gap between them, add a ruled spacer and
+                increase its height. You now have lines for the first answer, with question 2 below the new space.</p>
+            <p>Repeat below question 2 if you need another answer area. Turn on <em>Page Breaks</em> to preview
+                where the expanded worksheet may split, then check the exported PDF before printing.</p>
+        </div>
+        <p>You can move, duplicate or delete a selected spacer. Right-click it for those options, or use the
+            properties panel to adjust it.</p>
+        <h2 id="notes">Make room for notes and diagrams in a PDF</h2>
+        <p>Insert a plain spacer after a section of lecture notes for a summary, or choose a dot grid for a
+            diagram. The added area spans the page width, so it works best between blocks of content.</p>
+        <p>After export, open the PDF in your preferred annotation app to type or handwrite notes, or print
+            it and write on paper. PDFSpacer creates the space; it does not add text answers or drawing tools.</p>
+        <h2 id="space-or-pages">Is this the same as adding margins or blank pages?</h2>
+        <p>These solve different layout problems:</p>
+        <ul>
+            <li><strong>Space between questions:</strong> inserts an area inside the existing page and pushes
+                later content down. Use PDFSpacer when the writing belongs directly below a question.</li>
+            <li><strong>Wider margins:</strong> adds room around the edges of a page for side notes or binding.
+                PDFSpacer does not change side margins.</li>
+            <li><strong>Blank pages:</strong> adds a separate sheet between whole pages. PDFSpacer instead lets
+                you choose an insertion point within the content.</li>
+        </ul>
+        <h2 id="export">Choose an export layout for printing or reading</h2>
+        <p><strong>Paginated A4</strong> spreads the expanded document across A4 pages. Content flows across
+            source-page boundaries. This is the layout to use when you want to print worksheets or past papers.</p>
+        <p><strong>Single Long Page</strong> exports one continuous page for scrolling. Very long documents
+            can exceed browser or PDF-reader size limits, so use A4 for larger files.</p>
+        <p>A4 export uses the original PDF text and vector graphics when possible, with an image-based fallback.
+            Single Long Page is image-based. Check the output if selectable text or sharp detail matters to you;
+            scanned text remains an image.</p>
+        <h2 id="questions">Common questions</h2>
+        <h3>Can I add space to a scanned PDF?</h3>
+        <p>Yes. A scanned page can be split and spaced in the same way. Choose a clear gap in the scan.
+            PDFSpacer does not perform OCR or turn the scanned words into editable text.</p>
+        <h3>Will this work on a two-column document?</h3>
+        <p>A spacer crosses the full width of the page. Both columns move below the insertion point, so find
+            a horizontal gap that is clear in both columns. It cannot add space to only one column.</p>
+        <h3>Does the PDF leave my device?</h3>
+        <p>The app processes your document locally in the browser and does not upload it to a server.
+            The website loads its PDF libraries from CDNs. Your PDF and layout are saved in browser storage
+            for session recovery; use <em>Project → Clear Session</em> to remove that saved session.</p>
+        <h3>Can I come back to my layout later?</h3>
+        <p>The app can restore a saved session in the same browser when browser storage is available. For a
+            separate copy of your spacer layout, use <em>Project → Save Project</em>. Keep the original PDF too:
+            the project JSON contains the layout, not the document.</p>
+        <p><a class="btn" href="/">Choose a PDF and add writing space</a></p>
+    </main>
+    <footer>
+        <div class="wrap"><p><a href="/">PDFSpacer</a> · Free space for answers and notes.</p></div>
+    </footer>
 </body>
 </html>
-

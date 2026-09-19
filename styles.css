@@ -372,6 +372,7 @@ h1 {
     margin: 0 auto;
 }
 
+
 .pdf-page {
     margin-bottom: 20px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -469,6 +470,112 @@ h1 {
     margin-bottom: 24px;
     color: #7f8c8d;
 }
+
+/* Useful, crawlable introduction; removed with the empty state when a PDF opens. */
+.pdf-viewer .welcome {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 760px;
+    padding: 32px 20px;
+    line-height: 1.65;
+}
+
+.welcome .welcome-brand {
+    font-size: 14px;
+    color: #526477;
+    margin-bottom: 12px;
+}
+
+.welcome > h2 {
+    font-size: clamp(26px, 3vw, 38px);
+    line-height: 1.2;
+}
+
+.welcome .welcome-intro {
+    max-width: 62ch;
+    color: #415166;
+    margin: 8px 0 24px;
+}
+
+.welcome .welcome-privacy {
+    font-size: 13px;
+    color: #526477;
+    margin: 12px 0 8px;
+}
+
+.welcome-section {
+    width: 100%;
+    text-align: left;
+    border-top: 1px solid #dce3e9;
+    margin-top: 28px;
+    padding-top: 24px;
+}
+
+.welcome-section h2 {
+    font-size: 21px;
+}
+
+.welcome-section p {
+    color: #415166;
+    margin-bottom: 16px;
+}
+
+.welcome-steps {
+    padding-left: 24px;
+    color: #415166;
+    margin-bottom: 16px;
+}
+
+.welcome-steps li {
+    padding-left: 4px;
+    margin-bottom: 10px;
+}
+
+.welcome a {
+    color: #176ba0;
+    text-underline-offset: 3px;
+}
+
+.welcome-links {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.welcome details {
+    padding: 12px 0;
+    border-bottom: 1px solid #dce3e9;
+    color: #415166;
+}
+
+.welcome summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.welcome details p {
+    margin: 8px 0 0;
+}
+
+/* Keep the entry page usable on phones without squeezing it beside the sidebar. */
+@media (max-width: 768px) {
+    .main-content:has(.welcome) > .sidebar {
+        display: none;
+    }
+
+    .pdf-viewer:has(.welcome) {
+        padding: 12px;
+    }
+
+    .pdf-viewer .welcome {
+        padding: 20px 8px;
+    }
+}
+
 
 /* Spacer styles */
 .spacer {

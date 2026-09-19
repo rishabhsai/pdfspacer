@@ -8,7 +8,7 @@ A powerful web application that allows you to add adjustable blank "answer space
 - **Slice & Shift Reflow**: Click anywhere on a page to insert a spacer that pushes all content below it down
 - **Automatic Page Breaks**: Content that overflows to new pages is handled seamlessly
 - **Multiple Spacers**: Add multiple spacers per page with cumulative offset calculations
-- **Quality Preservation**: Maintains original PDF text and vector quality without rasterization
+- **Quality Preservation**: A4 export uses original text and vectors where possible, with an image fallback; long-page export is image-based.
 
 ### Spacer Styles
 - **Plain**: Clean white space
@@ -61,7 +61,7 @@ A powerful web application that allows you to add adjustable blank "answer space
 ### Exporting
 1. Click "Export PDF" to open the export dialog
 2. Choose a layout: "Paginated A4" or "Single Long Page"
-3. Pick Render Scale (1x/2x/3x) and Image Quality
+3. Quality is selected automatically for the chosen layout.
 4. Export runs with progress. Paginated export continues content across source pages by default (no forced new page)
 
 ## Technical Details
@@ -127,38 +127,38 @@ The application implements a sophisticated reflow system:
 
 This is a standalone web application that runs entirely in the browser. No server setup or installation required - just open `index.html` in your browser and start adding answer spaces to your PDFs!
 
-## Deploying to Vercel
+## Hosting and search visibility
 
-You can deploy this static site without a build step.
+The public site currently resolves to `https://www.pdfspacer.com/`. Keep canonical tags,
+Open Graph URLs, JSON-LD, `robots.txt` and `sitemap.xml` consistent with that host.
+The homepage targets adding space to PDFs; `/guide` explains the workflow and use cases.
+The former `/demo` duplicates the guide and now redirects there.
 
-- Option A — via Git:
-  - Push this repo to GitHub/GitLab/Bitbucket.
-  - In Vercel, create a New Project and import the repo.
-  - Framework Preset: "Other". Build and Output: leave empty (no build).
-  - Root Directory: repo root. Hit Deploy.
+Use Cloudflare Pages for new deployments unless another provider is explicitly requested.
+No build step is needed. Preserve the public domain and clean `/guide` URL when migrating;
+Cloudflare Pages serves matching HTML files at extensionless URLs. Configure permanent
+redirects from the apex domain and any old hosting domain to the chosen canonical host.
+The existing `vercel.json` maintains the current host until migration: clean URLs, a
+permanent redirect from the public Vercel alias, and `/demo` → `/guide`. Its static assets
+revalidate because their filenames are not content hashed. Do not give changing `app.js`,
+`styles.css` or `og.png` a year-long immutable browser cache. The stylesheet URL
+includes a version query to bypass copies cached under the previous immutable policy.
 
-- Option B — via CLI:
-  - Install Vercel CLI: `npm i -g vercel`
-  - From the repo root: `vercel` (follow prompts) then `vercel --prod` for production.
+After publishing:
 
-Included `vercel.json` sets long cache headers for static assets and clean URLs.
+1. Check that `/` and `/guide` return 200, `/og.png` is available, and missing pages return 404.
+2. Check that apex and legacy URLs redirect to the matching canonical page, without loops.
+3. Submit `https://www.pdfspacer.com/sitemap.xml` in the `pdfspacer.com` Search Console property.
+4. Inspect the two canonical pages, run a live test, then request indexing once.
+5. Compare non-branded query impressions, clicks and positions over comparable periods.
+   Track phrases such as “add space to pdf”, “add blank space to pdf”, “add space between
+   questions in pdf”, and worksheet answer-space searches. Small samples can vary widely.
 
-## Getting Indexed by Google
+The app schema describes real features and the free price; it does not invent ratings or
+reviews. Structured data alone does not guarantee a Google rich result or higher rankings.
+Keep FAQs useful to readers and avoid creating near-identical pages for keyword variations.
 
-1. Use a stable domain (Vercel domain or custom domain) and update:
-   - `index.html` `<link rel="canonical" href="https://your-domain.example/">`
-   - `robots.txt` Sitemap URL
-   - `sitemap.xml` `<loc>` entries
-2. Verify your site in Google Search Console:
-   - Add property for your domain.
-   - Verify via DNS TXT (recommended) or HTML tag.
-3. Submit `sitemap.xml` in Search Console.
-4. Request Indexing for the homepage (URL Inspection tool).
-5. Keep pages crawlable: `robots.txt` allows `/` (already set). Avoid password walls.
-6. Optimize basics:
-   - Unique `<title>` and meta description (already present).
-   - Open Graph tags (present) and JSON‑LD (added).
-   - Fast load: CDN libs, caching (via `vercel.json`).
-7. Optional: add `demo.html` links back to `/` and relevant anchor text.
-
-After deployment, replace all `your-domain.example` placeholders with your actual domain, redeploy, then re-submit the sitemap.
+For local review, run `python3 -m http.server 8000`, then visit `/index.html` and `/guide.html`.
+Python's simple server does not implement production clean URLs or hosting redirects.
+Check the entry page on desktop and a narrow mobile viewport, follow guide anchors, then
+load a multi-page PDF, insert and resize a spacer, and export A4 and long-page PDFs.

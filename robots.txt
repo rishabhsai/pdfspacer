@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://pdfspacer.com/sitemap.xml
+Sitemap: https://www.pdfspacer.com/sitemap.xml
