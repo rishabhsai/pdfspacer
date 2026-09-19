@@ -24,7 +24,7 @@
     <style>
         * { box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; color: #2c3e50; background: #f8f9fa; line-height: 1.75; }
-        header { border-bottom: 1px solid #dce3e9; }
+        header { border-bottom: 1px solid #dce1d9; }
         header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
         .wrap { max-width: 780px; margin: 0 auto; padding: 24px; }
         main.wrap { padding-top: 40px; }
@@ -32,16 +32,16 @@
         h2 { font-size: 24px; line-height: 1.3; margin: 40px 0 16px; scroll-margin-top: 24px; }
         h3 { font-size: 18px; margin: 24px 0 8px; }
         p { margin: 0 0 16px; }
-        a { color: #176ba0; text-underline-offset: 3px; }
+        a { color: #245c4b; text-underline-offset: 3px; }
         a:hover { color: #124f76; }
-        .btn { display: inline-block; background: #176ba0; color: #fff; padding: 10px 16px; border-radius: 6px; text-decoration: none; font-weight: 600; }
+        .btn { display: inline-block; background: #245c4b; color: #fff; padding: 10px 16px; border-radius: 6px; text-decoration: none; font-weight: 600; }
         .btn:hover { background: #124f76; color: #fff; }
         ol, ul { padding-left: 24px; }
         li { margin: 10px 0; }
-        nav { border-block: 1px solid #dce3e9; padding: 16px 0; margin: 32px 0; }
+        nav { border-block: 1px solid #dce1d9; padding: 16px 0; margin: 32px 0; }
         nav ul { margin: 0; }
-        .example { padding: 20px; background: #edf3f7; border: 1px solid #dce3e9; border-radius: 6px; }
-        footer { border-top: 1px solid #dce3e9; margin-top: 40px; }
+        .example { padding: 20px; background: #edf2e9; border: 1px solid #dce1d9; border-radius: 6px; }
+        footer { border-top: 1px solid #dce1d9; margin-top: 40px; }
         footer p { font-size: 14px; margin: 0; }
         @media (max-width: 480px) { .wrap { padding: 20px; } header .wrap { flex-wrap: wrap; } }
     </style>
@@ -91,9 +91,9 @@
         </nav>
         <h2 id="steps">Insert blank space in four steps</h2>
         <ol>
-            <li><strong>Open your document.</strong> Go to <a href="/">PDFSpacer</a>, click <em>Choose PDF File</em>
-                or <em>Load PDF</em>, and select a PDF from your device.</li>
-            <li><strong>Choose an insertion point.</strong> Select the ruler tool in the sidebar. Click in a clear
+            <li><strong>Open your document.</strong> Go to <a href="/">PDFSpacer</a>, click <em>Choose a PDF</em>
+                or <em>Open PDF</em>, and select a PDF from your device.</li>
+            <li><strong>Choose an insertion point.</strong> Select <em>Add space</em> in the toolbar. Click in a clear
                 horizontal gap below a question, paragraph or diagram. Content below that point moves down.</li>
             <li><strong>Set the amount and style of space.</strong> Select the spacer to edit its properties.
                 Drag the resize handle to change its height. Choose Plain, Ruled, Dot Grid or Squared.
@@ -111,11 +111,10 @@
             <strong>Example: a crowded two-question worksheet</strong>
             <p>Question 2 starts immediately after question 1. Click the gap between them, add a ruled spacer and
                 increase its height. You now have lines for the first answer, with question 2 below the new space.</p>
-            <p>Repeat below question 2 if you need another answer area. Turn on <em>Page Breaks</em> to preview
+            <p>Repeat below question 2 if you need another answer area. Turn on <em>A4 breaks</em> to preview
                 where the expanded worksheet may split, then check the exported PDF before printing.</p>
         </div>
-        <p>You can move, duplicate or delete a selected spacer. Right-click it for those options, or use the
-            properties panel to adjust it.</p>
+        <p>You can move, duplicate or delete a selected spacer. Use the properties panel for Duplicate and Delete. Drag a spacer to move it or drag its bottom handle to resize it. Heights and pattern spacing are shown in millimetres on A4 paper.</p>
         <h2 id="notes">Make room for notes and diagrams in a PDF</h2>
         <p>Insert a plain spacer after a section of lecture notes for a summary, or choose a dot grid for a
             diagram. The added area spans the page width, so it works best between blocks of content.</p>
@@ -134,11 +133,11 @@
         <h2 id="export">Choose an export layout for printing or reading</h2>
         <p><strong>Paginated A4</strong> spreads the expanded document across A4 pages. Content flows across
             source-page boundaries. This is the layout to use when you want to print worksheets or past papers.</p>
-        <p><strong>Single Long Page</strong> exports one continuous page for scrolling. Very long documents
-            can exceed browser or PDF-reader size limits, so use A4 for larger files.</p>
-        <p>A4 export uses the original PDF text and vector graphics when possible, with an image-based fallback.
-            Single Long Page is image-based. Check the output if selectable text or sharp detail matters to you;
-            scanned text remains an image.</p>
+        <p><strong>Single Long Page</strong> exports one continuous page for scrolling. It uses PDF page-size units to retain the full height of long documents. Choose A4 when you want a convenient print layout.</p>
+        <p>Both modes preserve the original PDF text and vector graphics; scanned text remains an image. Interactive forms, annotations and clickable links are not included. Use <em>Export PDF → Preview</em> to inspect the actual output before downloading.</p>
+        <h2 id="shortcuts">Undo and keyboard shortcuts</h2>
+        <p>Every completed edit can be undone, including a drag, resize, deletion or clearing all spaces. Use the Undo and Redo buttons, or Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z. With a spacer selected, press Delete to remove it or the up/down arrow keys to move it. Hold Shift for larger movements.</p>
+        <p>On a phone or tablet, tap to insert or select a space. Drag its body to move it and its bottom handle to resize it. Properties appear below the document. Use Fit to size the page to your screen.</p>
         <h2 id="questions">Common questions</h2>
         <h3>Can I add space to a scanned PDF?</h3>
         <p>Yes. A scanned page can be split and spaced in the same way. Choose a clear gap in the scan.
@@ -152,7 +151,7 @@
             for session recovery; use <em>Project → Clear Session</em> to remove that saved session.</p>
         <h3>Can I come back to my layout later?</h3>
         <p>The app can restore a saved session in the same browser when browser storage is available. For a
-            separate copy of your spacer layout, use <em>Project → Save Project</em>. Keep the original PDF too:
+            separate copy of your spacer layout, use <em>Project → Download layout</em>. Keep the original PDF too:
             the project JSON contains the layout, not the document.</p>
         <p><a class="btn" href="/">Choose a PDF and add writing space</a></p>
     </main>

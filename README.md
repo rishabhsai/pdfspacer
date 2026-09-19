@@ -1,164 +1,64 @@
-# PDF Answer Spacer
+# PDFSpacer
 
-A powerful web application that allows you to add adjustable blank "answer spaces" between existing content in PDF documents without covering any original text. The app intelligently reflows pages by slicing at insertion points and pushing content below downward, handling page breaks automatically.
+Insert writing space between existing PDF questions. Original content below each insertion point moves down; export the result as A4 pages or one long page. Processing and session storage stay in the browser.
 
-## Features
+## Run locally
 
-### Core Functionality
-- **Slice & Shift Reflow**: Click anywhere on a page to insert a spacer that pushes all content below it down
-- **Automatic Page Breaks**: Content that overflows to new pages is handled seamlessly
-- **Multiple Spacers**: Add multiple spacers per page with cumulative offset calculations
-- **Quality Preservation**: A4 export uses original text and vectors where possible, with an image fallback; long-page export is image-based.
+Run `python3 -m http.server 8000` and open `http://localhost:8000`. There is no build step or package installation. The app uses version-pinned PDF.js and pdf-lib scripts from CDNs. Python's server uses `/guide.html`; production serves the clean `/guide` URL.
 
-### Spacer Styles
-- **Plain**: Clean white space
-- **Ruled**: Horizontal lines with adjustable spacing (10-50px)
-- **Dot Grid**: Adjustable dot pitch grid pattern (5-30px)
+## Editing
 
-### User Interface
-- **PDF Viewer**: Continuous scroll viewer with zoom controls (fit, zoom in/out)
-- **Add Space Tool**: Click-to-place spacers with visual preview
-- **Properties Panel**: Edit spacer height, position, style, and spacing properties; clear Duplicate/Delete buttons
-- **Keyboard Shortcuts**: Arrow keys to nudge spacers, Delete to remove
+- Choose a PDF or try the bundled sample. Select **Add space**, then click in a clear horizontal gap below a question.
+- Select a spacer to edit its height, position and plain, ruled, squared or dot-grid style. Measurements show millimetres on exported A4 paper.
+- Drag the body to move a spacer or its bottom handle to resize it. Pointer Events support mouse, pen and touch. On narrow screens, properties sit below the document.
+- Duplicate and Delete are in the properties panel. Undo/Redo includes completed drags, resizes, property edits, imported layouts and Clear all spaces.
+- Keyboard: Ctrl/Cmd+Z undo; Ctrl/Cmd+Shift+Z or Ctrl+Y redo; Delete removes a selected spacer; arrows move it, Shift+arrows move farther.
+- A4 break guides use the export layout. **Export PDF → Preview** renders the actual output PDF before downloading.
 
-### Project Management
-- **Autosave**: Automatically saves your layout locally
-- **Export/Import**: Save and load project files for later editing
-- **PDF Export**: Generate print-ready PDFs with inserted spaces
+## Saving and export
 
-## How to Use
+PDF bytes and the layout are saved locally in IndexedDB. Replacing a document writes both records in one transaction. Completed edits save their validated layout independently of rendering. A visible warning identifies failed autosave; Download layout provides a separate JSON copy. The one-time upgrade imports the previous editor's localStorage layout into IndexedDB.
 
-### Getting Started
-1. Open `index.html` in a modern web browser
-2. Click "Load PDF" to select your PDF file
-3. Wait for the PDF to load and display
+**Project → Download layout** saves a JSON layout, not the original document. Keep both. Load layout verifies the PDF fingerprint and rejects invalid geometry without replacing existing edits. **Clear session** removes the stored PDF and layout from this browser.
 
-### Adding Spacers
-1. Click the "📏" (Add Space) tool in the sidebar
-2. Click anywhere on the PDF page where you want to insert space
-3. A spacer will be created at that position, pushing content below it down
+Both export modes use the same vector pipeline. Source content is scaled to A4 width, then flows continuously across source pages. The PDF.js page transform accounts for rotation and crop origin. Pagination clips source slices using matching source and destination coordinates. Long pages use PDF 1.7 UserUnit for dimensions beyond the default 200-inch limit.
 
-### Editing Spacers
-1. Click on any spacer to select it (it will highlight in red)
-2. Use the Properties Panel to adjust:
-   - **Style**: Plain, Ruled, or Dot Grid
-   - **Height**: Adjust the spacer height (20-500px)
-   - **Position**: Move the spacer up or down
-   - **Spacing/Pitch**: Adjust line spacing or dot density
-3. Drag spacers to reposition them
-4. Use the resize handle (red circle) to adjust height visually
-5. Right-click spacers for context menu options
+The output preserves original text and graphics. Scans stay images. Interactive forms, annotations, document outlines and clickable links are not carried into the reflowed PDF. Place insertion points in clear gaps: the tool does not detect question boundaries or edit the source words. A4 page boundaries can split content; check the export preview before printing. Very large documents remain constrained by browser memory and PDF reader capabilities.
 
-### Keyboard Shortcuts
-- **Arrow Keys**: Nudge selected spacer up/down by 5px
-- **Delete/Backspace**: Remove selected spacer
+## Files
 
-### Project Management
-- **Save Project**: Export your spacer layout as a JSON file
-- **Load Project**: Import a previously saved layout
-- **Clear All**: Remove all spacers (with confirmation)
+- `index.html`, `styles.css`: static landing content and responsive editor UI.
+- `app.js`: file lifecycle, editing controls, canvas rendering and export preview.
+- `layout.js`: validated spacer model, source/destination geometry, pagination and undo history.
+- `export.js`: a single pdf-lib exporter for both output modes.
+- `storage.js`: serialized IndexedDB transactions.
+- `guide.html`, `sample.pdf`: usage guide and locally processed sample worksheet.
 
-### Exporting
-1. Click "Export PDF" to open the export dialog
-2. Choose a layout: "Paginated A4" or "Single Long Page"
-3. Quality is selected automatically for the chosen layout.
-4. Export runs with progress. Paginated export continues content across source pages by default (no forced new page)
+Source canvases are cached by page at the current zoom, with six cache entries. Pages rasterize near the viewport. Spacer edits rebuild only the changed page's segments; unaffected page elements remain in place. Stale asynchronous renders cannot replace the current document or layout.
 
-## Technical Details
+## Verification
 
-### Architecture
-- **Frontend**: Pure HTML5, CSS3, and JavaScript (ES6+)
-- **PDF Processing**: PDF.js for rendering and manipulation
-- **PDF Generation**: jsPDF for export functionality
-- **Storage**: LocalStorage for autosave, JSON files for project export
+Run the optional, dependency-free geometry regression checks with:
 
-### Browser Compatibility
-- Chrome 80+
-- Firefox 75+
-- Safari 13+
-- Edge 80+
-
-### Performance
-- Optimized for PDFs up to 30 pages
-- Smooth interaction with real-time preview
-- Efficient memory usage with canvas-based rendering
-
-## File Structure
-```
-answer-blocks/
-├── index.html     # Main application interface
-├── styles.css     # Application styling
-├── app.js         # Core application logic
-├── demo.html      # Simple landing linking to the app
-├── AGENTS.md      # Repo agent guidance and conventions
-└── README.md      # This documentation
+```sh
+node --test tests/layout.test.cjs
 ```
 
-## Core Algorithm
+Tests cover small/non-A4 pagination, mixed widths, preserved source intervals, insertion coordinate mapping, long-document geometry, invalid imports, undo/redo and pattern continuity across page boundaries.
 
-The application implements a sophisticated reflow system:
+Browser sanity checks:
 
-1. **Content Segmentation**: Divides each page into segments based on spacer positions
-2. **Offset Calculation**: Calculates cumulative offsets for all spacers on a page
-3. **Page Overflow Detection**: Determines when content exceeds page boundaries
-4. **Automatic Page Splitting**: Creates new pages when content overflows
-5. **Precise Rendering**: Maintains exact positioning and quality in exports
+1. Open a multi-page PDF. Insert, resize, move, duplicate and delete spaces. Check every source page remains visible.
+2. Edit a height, refresh and verify it restores. Check Undo/Redo and reject a negative height or a layout for a different PDF.
+3. At 120% zoom, move a spacer 120 screen pixels; the output movement should be 100 points. One drag should undo in one step.
+4. Check a 390px viewport: Fit must fit the page and touch controls must remain available.
+5. Export A4 and long-page PDFs. Include small pages, rotated/cropped pages, mixed sizes, blank pages, a scanned page and an 18-page document. Inspect the first and last source content visually, not just extracted text.
+6. Check Export → Preview and actual downloaded PDFs. Clear session and verify the landing page returns.
 
-## Limitations
+## Hosting and SEO
 
-- Maximum recommended PDF size: 30 pages
-- Spacer height range: 20-500 pixels
-- Browser memory limitations for very large PDFs
-- Export quality depends on original PDF resolution
+Production is the existing Vercel project, explicitly chosen by the owner, at `https://www.pdfspacer.com/`. No build command is required. `vercel.json` serves clean URLs, redirects `/demo` to `/guide`, redirects the public Vercel alias to the canonical host, and revalidates static assets. `.vercelignore` excludes environment files, local project metadata, documentation and tests.
 
-## Suggested Tools and Enhancements
+The homepage explains adding space to PDFs with a working sample, use cases, FAQs and links to the guide. Metadata, canonical tags, sitemap, Open Graph image and JSON-LD must use the same public host. Do not invent reviews, ratings or create duplicate pages for keyword variations.
 
-- Undo/redo for spacer edits (Ctrl/Cmd+Z, Shift+Z)
-- Snap-to-grid toggle with adjustable grid size
-- Quick spacer presets (Small/Medium/Large heights)
-- Lock spacer to prevent accidental changes
-- Duplicate spacer to next page(s) with same offset
-- Nudge increments via modifier keys (1/5/10px)
-- Ruler overlay with guides and snapping
-- Multi-select spacers for bulk move/delete
-- Alignment helpers (distribute vertical spacing)
-
-## Support
-
-This is a standalone web application that runs entirely in the browser. No server setup or installation required - just open `index.html` in your browser and start adding answer spaces to your PDFs!
-
-## Hosting and search visibility
-
-The public site currently resolves to `https://www.pdfspacer.com/`. Keep canonical tags,
-Open Graph URLs, JSON-LD, `robots.txt` and `sitemap.xml` consistent with that host.
-The homepage targets adding space to PDFs; `/guide` explains the workflow and use cases.
-The former `/demo` duplicates the guide and now redirects there.
-
-Use Cloudflare Pages for new deployments unless another provider is explicitly requested.
-No build step is needed. Preserve the public domain and clean `/guide` URL when migrating;
-Cloudflare Pages serves matching HTML files at extensionless URLs. Configure permanent
-redirects from the apex domain and any old hosting domain to the chosen canonical host.
-The existing `vercel.json` maintains the current host until migration: clean URLs, a
-permanent redirect from the public Vercel alias, and `/demo` → `/guide`. Its static assets
-revalidate because their filenames are not content hashed. Do not give changing `app.js`,
-`styles.css` or `og.png` a year-long immutable browser cache. The stylesheet URL
-includes a version query to bypass copies cached under the previous immutable policy.
-
-After publishing:
-
-1. Check that `/` and `/guide` return 200, `/og.png` is available, and missing pages return 404.
-2. Check that apex and legacy URLs redirect to the matching canonical page, without loops.
-3. Submit `https://www.pdfspacer.com/sitemap.xml` in the `pdfspacer.com` Search Console property.
-4. Inspect the two canonical pages, run a live test, then request indexing once.
-5. Compare non-branded query impressions, clicks and positions over comparable periods.
-   Track phrases such as “add space to pdf”, “add blank space to pdf”, “add space between
-   questions in pdf”, and worksheet answer-space searches. Small samples can vary widely.
-
-The app schema describes real features and the free price; it does not invent ratings or
-reviews. Structured data alone does not guarantee a Google rich result or higher rankings.
-Keep FAQs useful to readers and avoid creating near-identical pages for keyword variations.
-
-For local review, run `python3 -m http.server 8000`, then visit `/index.html` and `/guide.html`.
-Python's simple server does not implement production clean URLs or hosting redirects.
-Check the entry page on desktop and a narrow mobile viewport, follow guide anchors, then
-load a multi-page PDF, insert and resize a spacer, and export A4 and long-page PDFs.
+After publishing, verify homepage/guide/sample routes and redirects. Use the `sc-domain:pdfspacer.com` Search Console property to monitor non-branded query impressions and clicks over comparable periods. Sitemap: `https://www.pdfspacer.com/sitemap.xml`. New content does not guarantee rankings.
