@@ -14,17 +14,6 @@
     ],
     "redirects": [
         {
-            "source": "/:path*",
-            "has": [
-                {
-                    "type": "host",
-                    "value": "pdfspacer.vercel.app"
-                }
-            ],
-            "destination": "https://www.pdfspacer.com/:path*",
-            "permanent": true
-        },
-        {
             "source": "/demo",
             "destination": "/guide",
             "permanent": true

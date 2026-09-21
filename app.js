@@ -104,7 +104,8 @@ class PDFAnswerSpacer {
             this.sourceCache.clear();
             this.viewer.replaceChildren();
             this.$('landing').hidden = true;
-            this.$('editor').hidden = false;
+            this.viewer.hidden = false;
+            this.updateDocumentControls();
             document.body.classList.add('editing');
             this.$('documentName').textContent = this.pdfName;
             this.$('documentName').title = this.pdfName;
@@ -159,6 +160,9 @@ class PDFAnswerSpacer {
         this.renderDocument();
         this.updateProperties();
         this.updateHistory();
+    }
+    updateDocumentControls() {
+        document.querySelectorAll('[data-requires-pdf]').forEach(control => { control.disabled = !this.pdfDocument; });
     }
     updateHistory() {
         this.$('undoBtn').disabled = !this.history.past.length;
@@ -348,7 +352,7 @@ class PDFAnswerSpacer {
         if (!spacer) {
             const hint = document.createElement('p');
             hint.className = 'muted';
-            hint.textContent = 'Choose Add space, then click in a clear gap below a question. Select a space to adjust it.';
+            hint.textContent = this.pdfDocument ? 'Choose Add space, then click in a clear gap below a question. Select a space to adjust it.' : 'Open a PDF to add and edit writing space.';
             panel.append(hint);
             return;
         }
@@ -462,7 +466,15 @@ class PDFAnswerSpacer {
             this.pdfDocument = null; this.pdfData = null; this.selected = null;
             this.sourceCache.clear(); this.observer?.disconnect();
             this.viewer.replaceChildren();
-            this.$('editor').hidden = true; this.$('landing').hidden = false;
+            this.viewer.hidden = true; this.$('landing').hidden = false;
+            this.$('documentName').textContent = 'Add writing space to your PDF';
+            this.$('documentName').removeAttribute('title');
+            this.history = new SpacerLayout.History();
+            this.scale = 1;
+            this.$('zoomLevel').textContent = '100%';
+            this.updateDocumentControls();
+            this.updateHistory();
+            this.updateProperties();
             document.body.classList.remove('editing');
             this.saving = false; this.unsaved = false;
             this.status('Session removed from this device');

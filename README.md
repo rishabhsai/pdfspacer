@@ -27,7 +27,7 @@ The output preserves original text and graphics. Scans stay images. Interactive 
 
 ## Files
 
-- `index.html`, `styles.css`: static landing content and responsive editor UI.
+- `index.html`, `styles.css`: upload-first workspace and responsive editor UI.
 - `app.js`: file lifecycle, editing controls, canvas rendering and export preview.
 - `layout.js`: validated spacer model, source/destination geometry, pagination and undo history.
 - `export.js`: a single pdf-lib exporter for both output modes.
@@ -57,8 +57,8 @@ Browser sanity checks:
 
 ## Hosting and SEO
 
-Production is the existing Vercel project, explicitly chosen by the owner, at `https://www.pdfspacer.com/`. No build command is required. `vercel.json` serves clean URLs, redirects `/demo` to `/guide`, redirects the public Vercel alias to the canonical host, and revalidates static assets. `.vercelignore` excludes environment files, local project metadata, documentation and tests.
+Production is the existing Vercel project, explicitly chosen by the owner, at `https://www.pdfspacer.com/`. No build command is required. `vercel.json` serves clean URLs, redirects `/demo` to `/guide`, and revalidates static assets. Vercel project domain settings permanently redirect the apex domain and `pdfspacer.vercel.app` to `www.pdfspacer.com` (308). `.vercelignore` excludes environment files, local project metadata, documentation and tests.
 
-The homepage explains adding space to PDFs with a working sample, use cases, FAQs and links to the guide. Metadata, canonical tags, sitemap, Open Graph image and JSON-LD must use the same public host. Do not invent reviews, ratings or create duplicate pages for keyword variations.
+The homepage opens directly to the PDF workspace, with a file picker, drop area and sample. A compact help disclosure and the linked guide explain PDF spacing without a separate marketing page. Metadata, canonical tags, sitemap, Open Graph image and JSON-LD must use the same public host. Do not invent reviews, ratings or create duplicate pages for keyword variations.
 
 After publishing, verify homepage/guide/sample routes and redirects. Use the `sc-domain:pdfspacer.com` Search Console property to monitor non-branded query impressions and clicks over comparable periods. Sitemap: `https://www.pdfspacer.com/sitemap.xml`. New content does not guarantee rankings.

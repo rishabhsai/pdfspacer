@@ -24,64 +24,45 @@
         content="Make room for answers and notes between existing PDF questions. Free, no signup. Files stay on your device.">
     <meta name="twitter:image" content="https://www.pdfspacer.com/og.png">
     <meta name="twitter:image:alt" content="PDFSpacer adds writing space between two questions in a PDF worksheet.">
-    <meta name="theme-color" content="#245c4b">
+    <meta name="theme-color" content="#2874b9">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="canonical" href="https://www.pdfspacer.com/">
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-    <link rel="stylesheet" href="styles.css?v=20260919">
+    <link rel="stylesheet" href="styles.css?v=20260920">
 </head>
 
 <body>
     <input type="file" id="pdfInput" accept=".pdf,application/pdf" hidden>
     <input type="file" id="projectInput" accept=".json,application/json" hidden>
-    <main id="landing">
-        <nav class="site-nav wrap" aria-label="Main navigation">
-            <a class="brand" href="/">PDF<span>Spacer</span><i aria-hidden="true">↕</i></a>
-            <a href="/guide">How it works <span aria-hidden="true">↗</span></a>
-        </nav>
-        <section class="hero wrap">
-            <div class="hero-copy">
-                <p class="eyebrow">A little room to think.</p>
-                <h1>Add space to<br>your <em>PDF.</em></h1>
-                <p class="intro">A worksheet with nowhere to write? Insert blank space between questions. Everything below moves down, so your answers have room to grow.</p>
-                <div class="hero-actions"><button class="btn primary" data-choose-pdf>Choose a PDF <span aria-hidden="true">↗</span></button><button class="text-button" id="sampleBtn">Try a sample →</button></div>
-                <p class="privacy">Free. No signup. Your PDF stays on your device.</p>
-                <p class="drop-hint">You can also drop a PDF anywhere on this page.</p>
-            </div>
-            <figure class="paper-demo" aria-label="Example: writing space inserted between two worksheet questions">
-                <div class="paper-top"><span>WORKSHEET / 01</span><span>Before → After</span></div>
-                <h2>Room for the working.</h2>
-                <p><b>01.</b> Solve for x: &nbsp; 3x + 7 = 22</p>
-                <div class="demo-space"><span>+ Your writing space</span><div class="handwriting">3x = 15<br>x = 5</div></div>
-                <p><b>02.</b> Explain how you found your answer.</p>
-                <div class="paper-note">The next question moves down. ↕</div>
-                <figcaption>Same questions. More possibilities.</figcaption>
-            </figure>
-        </section>
-        <section class="how wrap" aria-labelledby="how-heading">
-            <div class="section-heading"><p class="eyebrow">Open. Make room. Export.</p><h2 id="how-heading">How to insert blank space in a PDF</h2></div>
-            <ol class="steps"><li><span>01</span><h3>Choose your document</h3><p>Open a worksheet, past paper or set of notes. Text PDFs and scanned pages both work.</p></li><li><span>02</span><h3>Put space where it belongs</h3><p>Click in a clear gap between questions. Choose plain, lined, squared or dotted space, then resize it.</p></li><li><span>03</span><h3>Take it back to paper</h3><p>Preview and export A4 pages for printing, or one long page for scrolling and digital annotation.</p></li></ol>
-            <a class="inline-link" href="/guide">See the full PDF spacing guide →</a>
-        </section>
-        <section class="uses wrap" aria-labelledby="uses-heading"><div><p class="eyebrow">Made for the gaps.</p><h2 id="uses-heading">Your questions.<br>Your kind of space.</h2><p>PDFSpacer inserts room inside the page. The content below your insertion point shifts down and continues onto new A4 pages when needed.</p></div><div class="use-list"><article><h3><a href="/guide#worksheets">Answer space for worksheets ↗</a></h3><p>Turn a crowded worksheet or exam paper into something you can work through by hand.</p></article><article><h3><a href="/guide#notes">Room for notes and diagrams ↗</a></h3><p>Leave a plain area beside the flow of your reading, or use a grid for calculations and sketches.</p></article><article><h3><a href="/guide#space-or-pages">Space between existing content ↗</a></h3><p>Keep the next question close to your answer. Add exactly the room you need at each insertion point.</p></article></div></section>
-        <section class="faq wrap" aria-labelledby="faq-heading"><div><p class="eyebrow">A few useful answers.</p><h2 id="faq-heading">Before you make room.</h2></div><div>
-            <details><summary>How do I add space between questions in a PDF?</summary><p>Choose your PDF, select Add space, then click in the gap below a question. Adjust the height or drag the bottom handle. The following content moves down. Preview your result before exporting.</p></details>
-            <details><summary>Will a spacer cover my existing text?</summary><p>The spacer moves the content below it down. Put the insertion point in a clear gap so it does not cut through a line of text or a diagram. Undo is available if you choose the wrong spot.</p></details>
-            <details><summary>Can I add blank space to a scanned PDF?</summary><p>Yes. You choose where to split the scanned page and insert writing space. PDFSpacer does not recognize or change the words in a scan.</p></details>
-            <details><summary>Can I type answers or edit the words in my PDF?</summary><p>PDFSpacer creates room for writing; it does not edit the original words. Download your PDF to print it or write on it with your preferred annotation app. Interactive forms, annotations and links are not carried over into the spaced document.</p></details>
-            <details><summary>Is it really free? Where does my PDF go?</summary><p>There is no account, payment or watermark. Processing happens in your browser. Your PDF and layout are saved on this device so you can return later. Use Project → Clear session to remove that saved copy.</p></details>
-            <details><summary>Can I print the PDF or use it on a tablet?</summary><p>Choose Paginated A4 for printing or Single long page for scrolling. Both preserve the source text and graphics. A scanned page retains the quality of the original scan. Use the export preview to check the result.</p></details>
-        </div></section>
-        <section class="closing wrap"><h2>Give your next answer some room.</h2><button class="btn primary" data-choose-pdf>Choose a PDF ↗</button></section>
-        <footer class="wrap"><a class="brand" href="/">PDF<span>Spacer</span></a><span>A small tool for bigger answers.</span><a href="mailto:rishabhsaiv@gmail.com">Feedback ↗</a></footer>
+    <main id="editor" aria-label="PDF spacer editor">
+        <header class="editor-header"><a class="brand" href="/" aria-label="PDFSpacer home">PDFSpacer</a><span id="documentName">Add writing space to your PDF</span><button class="btn" data-choose-pdf>Open PDF</button><details class="project-menu"><summary class="btn">Project</summary><div><button id="saveProjectBtn" data-requires-pdf disabled>Download layout</button><button id="loadProjectBtn" data-requires-pdf disabled>Load layout</button><button id="clearProjectBtn" data-requires-pdf disabled>Clear all spaces</button><button id="clearSessionBtn" data-requires-pdf disabled>Clear session</button><a href="/guide" target="_blank" rel="noopener">Help & shortcuts</a></div></details><button class="btn primary" id="exportPdfBtn" data-requires-pdf disabled>Export PDF</button></header>
+        <div class="editor-toolbar"><div class="tool-group"><button class="btn" id="addSpaceBtn" data-requires-pdf disabled aria-pressed="true">+ Add space</button><button class="btn" id="selectBtn" data-requires-pdf disabled aria-pressed="false">Select</button></div><div class="tool-group"><button class="btn" id="undoBtn" disabled title="Undo (Ctrl/Cmd+Z)">↶ <span>Undo</span></button><button class="btn" id="redoBtn" disabled title="Redo (Ctrl/Cmd+Shift+Z)">↷ <span>Redo</span></button></div><div class="zoom-controls"><button class="btn" id="zoomOutBtn" data-requires-pdf disabled aria-label="Zoom out">−</button><span id="zoomLevel">100%</span><button class="btn" id="zoomInBtn" data-requires-pdf disabled aria-label="Zoom in">+</button><button class="btn" id="fitWidthBtn" data-requires-pdf disabled>Fit</button></div><label class="breaks-label"><input type="checkbox" id="showBreaksToggle" data-requires-pdf disabled checked> A4 breaks</label></div>
+        <div class="editor-workspace"><div id="viewerContainer" class="viewer-container">
+                <section id="landing" class="empty-workspace" aria-labelledby="upload-heading">
+                    <div class="upload-panel">
+                        <svg class="upload-icon" width="44" height="52" viewBox="0 0 44 52" fill="none" aria-hidden="true"><path d="M8 2h18l12 12v36H8V2Z" stroke="currentColor" stroke-width="2"/><path d="M26 2v12h12M23 37V23m-6 6 6-6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h1 id="upload-heading">Add space to PDF</h1>
+                        <p>Drop a PDF here to add room for answers and notes.</p>
+                        <button class="btn primary" data-choose-pdf>Choose PDF</button>
+                        <button class="sample-button" id="sampleBtn">Try a sample</button>
+                        <p class="privacy">Free · No signup · Files stay on your device</p>
+                    </div>
+                    <details class="tool-help">
+                        <summary>How to add blank space between PDF questions</summary>
+                        <ol>
+                            <li><strong>Open your PDF.</strong> Choose a worksheet, exam paper or set of notes.</li>
+                            <li><strong>Add space.</strong> Click in a clear gap below a question. Choose plain, ruled, squared or dotted space and adjust its height.</li>
+                            <li><strong>Export.</strong> Preview the result, then download A4 pages for printing or a single long page for digital writing.</li>
+                        </ol>
+                        <p>PDFSpacer shifts the content below each insertion point down. Scanned pages work too; place the space between lines to avoid cutting through text or diagrams.</p>
+                        <p><a href="/guide">Read the full guide</a> · <a href="/guide#worksheets">Worksheet answer space</a> · <a href="/guide#notes">Space for notes</a></p>
+                    </details>
+                </section>
+                <div id="pdfViewer" class="pdf-viewer placing" hidden></div>
+            </div><aside class="sidebar"><h2>Writing space</h2><div id="spacerProperties"><p class="muted">Open a PDF to add and edit writing space.</p></div><p class="sidebar-note">Measurements show the size on exported A4 paper. Use Export → Preview to check the final pages.</p></aside></div>
     </main>
-    <section id="editor" hidden aria-label="PDF spacer editor">
-        <header class="editor-header"><a class="brand" href="/" aria-label="PDFSpacer home">PDF<span>Spacer</span></a><span id="documentName"></span><button class="btn" data-choose-pdf>Open PDF</button><details class="project-menu"><summary class="btn">Project</summary><div><button id="saveProjectBtn">Download layout</button><button id="loadProjectBtn">Load layout</button><button id="clearProjectBtn">Clear all spaces</button><button id="clearSessionBtn">Clear session</button><a href="/guide" target="_blank" rel="noopener">Help & shortcuts ↗</a></div></details><button class="btn primary" id="exportPdfBtn">Export PDF ↗</button></header>
-        <div class="editor-toolbar"><div class="tool-group"><button class="btn" id="addSpaceBtn" aria-pressed="true">+ Add space</button><button class="btn" id="selectBtn" aria-pressed="false">Select</button></div><div class="tool-group"><button class="btn" id="undoBtn" disabled title="Undo (Ctrl/Cmd+Z)">↶ <span>Undo</span></button><button class="btn" id="redoBtn" disabled title="Redo (Ctrl/Cmd+Shift+Z)">↷ <span>Redo</span></button></div><div class="zoom-controls"><button class="btn" id="zoomOutBtn" aria-label="Zoom out">−</button><span id="zoomLevel">100%</span><button class="btn" id="zoomInBtn" aria-label="Zoom in">+</button><button class="btn" id="fitWidthBtn">Fit</button></div><label class="breaks-label"><input type="checkbox" id="showBreaksToggle" checked> A4 breaks</label></div>
-        <div class="editor-workspace"><div id="viewerContainer" class="viewer-container"><div id="pdfViewer" class="pdf-viewer placing"></div></div><aside class="sidebar"><h2>Writing space</h2><div id="spacerProperties"></div><p class="sidebar-note">Measurements show the size on exported A4 paper. Use Export → Preview to check the final pages.</p></aside></div>
-    </section>
     <div id="status" role="status" aria-live="polite"></div>
-    <dialog id="exportDialog"><h2>Ready for your answers.</h2><p>Choose how your PDF should flow.</p><label class="export-option"><input type="radio" name="exportMode" value="paginated" checked><span><strong>Paginated A4</strong><small>Continuous content across printable A4 pages.</small></span></label><label class="export-option"><input type="radio" name="exportMode" value="long"><span><strong>Single long page</strong><small>One continuous sheet for digital writing and scrolling.</small></span></label><p class="muted">Original text and graphics stay sharp. Forms, annotations and clickable links are not included.</p><div class="dialog-actions"><button class="btn" id="exportCancelBtn">Cancel</button><button class="btn" id="previewBtn">Preview</button><button class="btn primary" id="exportConfirmBtn">Download PDF</button></div></dialog>
+    <dialog id="exportDialog"><h2>Export PDF</h2><p>Choose a page layout.</p><label class="export-option"><input type="radio" name="exportMode" value="paginated" checked><span><strong>Paginated A4</strong><small>Continuous content across printable A4 pages.</small></span></label><label class="export-option"><input type="radio" name="exportMode" value="long"><span><strong>Single long page</strong><small>One continuous sheet for digital writing and scrolling.</small></span></label><p class="muted">Original text and graphics stay sharp. Forms, annotations and clickable links are not included.</p><div class="dialog-actions"><button class="btn" id="exportCancelBtn">Cancel</button><button class="btn" id="previewBtn">Preview</button><button class="btn primary" id="exportConfirmBtn">Download PDF</button></div></dialog>
     <dialog id="previewDialog"><div class="preview-heading"><h2>Export preview</h2><button class="btn" id="closePreviewBtn">Close preview</button></div><div id="previewPages"></div></dialog>
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script defer src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
@@ -116,6 +97,6 @@
       ]
     }
     </script>
-    <script defer src="app.js?v=20260919"></script>
+    <script defer src="app.js?v=20260920"></script>
 </body>
 </html>
