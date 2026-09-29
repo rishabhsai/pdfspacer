@@ -16,35 +16,13 @@
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="A PDF worksheet with extra writing space inserted between questions.">
+    <meta name="twitter:image:alt" content="A PDF worksheet with extra writing space inserted between questions.">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="How to Add Space Between Questions in a PDF — PDFSpacer">
     <meta name="twitter:description" content="Insert blank space for answers and notes in a PDF worksheet. Free, local processing, no signup.">
     <meta name="twitter:image" content="https://www.pdfspacer.com/og.png">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-    <style>
-        * { box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; color: #2c3e50; background: #f8f9fa; line-height: 1.75; }
-        header { border-bottom: 1px solid #dce1d9; }
-        header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-        .wrap { max-width: 780px; margin: 0 auto; padding: 24px; }
-        main.wrap { padding-top: 40px; }
-        h1 { font-size: clamp(28px, 5vw, 40px); line-height: 1.2; margin: 8px 0 24px; }
-        h2 { font-size: 24px; line-height: 1.3; margin: 40px 0 16px; scroll-margin-top: 24px; }
-        h3 { font-size: 18px; margin: 24px 0 8px; }
-        p { margin: 0 0 16px; }
-        a { color: #245c4b; text-underline-offset: 3px; }
-        a:hover { color: #124f76; }
-        .btn { display: inline-block; background: #245c4b; color: #fff; padding: 10px 16px; border-radius: 6px; text-decoration: none; font-weight: 600; }
-        .btn:hover { background: #124f76; color: #fff; }
-        ol, ul { padding-left: 24px; }
-        li { margin: 10px 0; }
-        nav { border-block: 1px solid #dce1d9; padding: 16px 0; margin: 32px 0; }
-        nav ul { margin: 0; }
-        .example { padding: 20px; background: #edf2e9; border: 1px solid #dce1d9; border-radius: 6px; }
-        footer { border-top: 1px solid #dce1d9; margin-top: 40px; }
-        footer p { font-size: 14px; margin: 0; }
-        @media (max-width: 480px) { .wrap { padding: 20px; } header .wrap { flex-wrap: wrap; } }
-    </style>
+    <link rel="stylesheet" href="/pages.css?v=20260929">
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
@@ -79,6 +57,10 @@
             writing space at a point you choose and moves the content below down. You can add room for working,
             written responses or notes inside an existing PDF.</p>
         <p>The tool is free and runs in your browser. You do not need an account, and your PDF is processed on your device.</p>
+    <figure>
+        <img src="/images/before-after.webp" width="1496" height="950" alt="Before and after: a PDF worksheet on the left has no room to write; on the right PDFSpacer has inserted squared, ruled and dot-grid writing space between the questions." loading="lazy">
+        <figcaption>The same worksheet before and after adding squared, ruled and dot-grid space. The questions keep their original text and layout.</figcaption>
+    </figure>
         <nav aria-label="In this guide">
             <ul>
                 <li><a href="#steps">Insert blank space in four steps</a></li>
@@ -152,8 +134,15 @@
         <h3>Can I come back to my layout later?</h3>
         <p>The app can restore a saved session in the same browser when browser storage is available. For a
             separate copy of your spacer layout, use <em>Project → Download layout</em>. Keep the original PDF too:
-            the project JSON contains the layout, not the document.</p>
-        <p><a class="btn" href="/">Choose a PDF and add writing space</a></p>
+            tThe project JSON contains the layout, not the document.</p>
+        <h2 id="related">Guides for specific documents</h2>
+    <ul class="related">
+        <li><a href="/add-answer-space-to-past-papers">Add answer space to past papers and exam PDFs<span>Squared space for working, ruled space for written answers, A4 pages for printing.</span></a></li>
+        <li><a href="/add-lines-to-pdf-worksheet">Add lines to a PDF worksheet<span>Insert ruled answer lines under each question instead of drawing them by hand.</span></a></li>
+        <li><a href="/add-space-to-pdf-for-notes">Add space to a PDF for notes<span>Room to annotate lecture slides and readings in GoodNotes, Notability or on paper.</span></a></li>
+        <li><a href="/pdf-homework-spacer">PDF homework spacer<span>Space out homework questions without a script or a PDF editor.</span></a></li>
+    </ul>
+    <p class="cta"><a class="btn" href="/">Choose a PDF and add writing space</a></p>
     </main>
     <footer>
         <div class="wrap"><p><a href="/">PDFSpacer</a> · Free space for answers and notes.</p></div>

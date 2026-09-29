@@ -27,7 +27,9 @@ The output preserves original text and graphics. Scans stay images. Interactive 
 
 ## Files
 
-- `index.html`, `styles.css`: upload-first workspace and responsive editor UI.
+- `index.html`, `styles.css`: upload-first workspace, landing content and responsive editor UI.
+- `guide.html`, `add-answer-space-to-past-papers.html`, `add-lines-to-pdf-worksheet.html`, `add-space-to-pdf-for-notes.html`, `pdf-homework-spacer.html`, `pages.css`: static guide pages served at clean URLs in production.
+- `images/`: product screenshots used on the landing and guide pages.
 - `app.js`: file lifecycle, editing controls, canvas rendering and export preview.
 - `layout.js`: validated spacer model, source/destination geometry, pagination and undo history.
 - `export.js`: a single pdf-lib exporter for both output modes.

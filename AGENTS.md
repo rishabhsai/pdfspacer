@@ -4,7 +4,9 @@
 - `index.html` — main application UI; loads PDF.js and jsPDF from CDNs and `app.js`.
 - `app.js` — core logic (`PDFAnswerSpacer` class), rendering, spacer tools, and export.
 - `styles.css` — UI styles (buttons, layout, viewer, overlays).
-- `demo.html` — lightweight landing/demo that links to `index.html`.
+- `guide.html` plus `add-answer-space-to-past-papers.html`, `add-lines-to-pdf-worksheet.html`, `add-space-to-pdf-for-notes.html`, `pdf-homework-spacer.html` — static SEO/guide pages sharing `pages.css`; served at clean URLs (no `.html`) by `vercel.json`. Add new pages to `sitemap.xml` with a `lastmod`.
+- `images/` — real product screenshots (WebP) used by the landing and guide pages.
+- `demo.html` — legacy redirect to the guide.
 - `README.md` — usage overview and notes.
 
 Keep the app zero‑dependency and browser‑only. If you refactor, preserve a CDN‑friendly structure without a build step.

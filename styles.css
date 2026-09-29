@@ -566,3 +566,25 @@ body:not(.editing) .sidebar-note { display:none; }
 @media(prefers-reduced-motion:reduce) {
     * { scroll-behavior:auto!important; }
 }
+
+.landing-content { width:min(880px,100%); display:flex; flex-direction:column; gap:40px; padding:8px 0 48px; }
+.landing-content h2 { font-size:22px; font-weight:600; margin:0 0 14px; }
+.landing-content h3 { font-size:15px; font-weight:600; margin:0 0 6px; }
+.landing-content p { margin:0 0 12px; font-size:15px; }
+.landing-content a { color:var(--blue); text-decoration:underline; }
+.landing-content figure { margin:0; }
+.landing-content img { display:block; width:100%; height:auto; border:1px solid var(--line); border-radius:8px; background:#fff; }
+.landing-content figcaption { font-size:13px; color:var(--muted); margin-top:8px; text-align:center; }
+.landing-steps { margin:0; padding-left:22px; }
+.landing-steps li { margin-bottom:10px; line-height:1.6; font-size:15px; }
+.landing-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; }
+.landing-grid>div, .landing-grid>a { padding:16px; background:#fff; border:1px solid var(--line); border-radius:8px; font-size:14px; line-height:1.5; }
+.landing-grid>a { text-decoration:none; color:inherit; }
+.landing-grid>a:hover { border-color:var(--blue); text-decoration:none; }
+.landing-grid>a strong { display:block; color:var(--blue); margin-bottom:4px; }
+.landing-faq details { border-top:1px solid var(--line); }
+.landing-faq details:last-of-type { border-bottom:1px solid var(--line); }
+.landing-faq summary { padding:14px 0; font-weight:600; font-size:15px; list-style-position:inside; }
+.landing-faq details>p { padding:0 0 14px; color:var(--muted); }
+.landing-footer { font-size:13px; color:var(--muted); text-align:center; }
+.landing-footer a { color:var(--muted); margin:0 8px; }
