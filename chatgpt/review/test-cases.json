@@ -1,0 +1,72 @@
+{
+    "positive": [
+        {
+            "description": "Open the editor with no file in the chat and add writing space. Works on desktop, web and mobile. Download sample.pdf to your device first. Do not attach it to the chat; choose it inside the editor.",
+            "prompt": "I need to add blank space between the questions on a PDF worksheet so I can write my answers.",
+            "tools_triggered": "open_pdf_editor",
+            "expected_behavior": "ChatGPT calls open_pdf_editor. The PDFSpacer editor opens and asks for a PDF. After choosing sample.pdf, the worksheet appears. Selecting Add space and clicking below a question inserts space and moves the content below it down. Export PDF produces the spaced PDF as a download. Save to ChatGPT is not shown. The reply does not say the PDF was uploaded.",
+            "file_attachment_urls": [
+                "https://www.pdfspacer.com/sample.pdf"
+            ]
+        },
+        {
+            "description": "Ask for ruled answer lines. Works on desktop, web and mobile. Download sample.pdf to your device and choose it inside the editor.",
+            "prompt": "Open PDFSpacer so I can add ruled answer lines under each question.",
+            "tools_triggered": "open_pdf_editor",
+            "expected_behavior": "ChatGPT calls open_pdf_editor and the editor opens. After choosing sample.pdf and adding a space below a question, the space can be set to Ruled, and it then shows horizontal answer lines. The available styles are Plain, Ruled, Dot Grid and Squared.",
+            "file_attachment_urls": [
+                "https://www.pdfspacer.com/sample.pdf"
+            ]
+        },
+        {
+            "description": "A PDF is attached to the chat. Works on desktop, web and mobile. Attach sample.pdf to the message before sending the prompt.",
+            "prompt": "Add room for working under each question in this PDF.",
+            "tools_triggered": "open_pdf_editor",
+            "expected_behavior": "ChatGPT calls open_pdf_editor so the user can choose the PDF in the editor. The reply also says that in the ChatGPT desktop app the user can open sample.pdf from the chat with PDFSpacer, and that Save to ChatGPT then replaces the file in the chat. The reply does not claim that the PDF was edited, uploaded or sent to PDFSpacer.",
+            "file_attachment_urls": [
+                "https://www.pdfspacer.com/sample.pdf"
+            ]
+        },
+        {
+            "description": "Open a PDF from the chat with PDFSpacer and save it back. ChatGPT desktop app only, because file viewers are not available on web or mobile. Attach sample.pdf and send the prompt. Then open sample.pdf from the chat and choose PDFSpacer in the file viewer.",
+            "prompt": "Add answer space to this worksheet and put the result back in this chat.",
+            "tools_triggered": "open_pdf_editor, edit_pdf_file",
+            "expected_behavior": "After the prompt, ChatGPT calls open_pdf_editor and explains how to open sample.pdf with PDFSpacer from the file viewer. Opening the file that way calls edit_pdf_file, and PDFSpacer shows sample.pdf with a Save to ChatGPT button. After adding one space and selecting Save to ChatGPT, sample.pdf in the chat is replaced by the spaced version that contains the added space.",
+            "file_attachment_urls": [
+                "https://www.pdfspacer.com/sample.pdf"
+            ]
+        },
+        {
+            "description": "Export as a single long page. Works on desktop, web and mobile. Download sample.pdf to your device and choose it inside the editor.",
+            "prompt": "Space out my lecture notes PDF and export it as one long page for my tablet.",
+            "tools_triggered": "open_pdf_editor",
+            "expected_behavior": "ChatGPT calls open_pdf_editor. After choosing sample.pdf and adding a space, Export PDF offers Paginated A4 and Single Long Page. Choosing Single Long Page produces a PDF with one continuous page that contains the whole document and the added space.",
+            "file_attachment_urls": [
+                "https://www.pdfspacer.com/sample.pdf"
+            ]
+        }
+    ],
+    "negative": [
+        {
+            "description": "OCR and translation are out of scope. PDFSpacer only adds writing space between parts of a PDF, so no PDFSpacer tool should run.",
+            "prompt": "Run OCR on this scanned PDF and translate it into French.",
+            "expected_behavior": "No PDFSpacer tool is called. ChatGPT handles the request without PDFSpacer, or explains that PDFSpacer does not run OCR or translate text.",
+            "file_attachment_urls": [
+                "https://www.pdfspacer.com/sample.pdf"
+            ]
+        },
+        {
+            "description": "Merging PDFs is out of scope. PDFSpacer cannot combine files, so no PDFSpacer tool should run.",
+            "prompt": "Merge this worksheet with my answer sheet PDF into a single file.",
+            "expected_behavior": "No PDFSpacer tool is called. If ChatGPT mentions PDFSpacer, it says that PDFSpacer cannot merge PDFs.",
+            "file_attachment_urls": [
+                "https://www.pdfspacer.com/sample.pdf"
+            ]
+        },
+        {
+            "description": "Plain text in the chat with no PDF. There is no file to open, so edit_pdf_file must not run, and reformatting text does not need PDFSpacer.",
+            "prompt": "Double the line spacing in this paragraph so I can print it: Photosynthesis turns light energy into chemical energy stored in glucose.",
+            "expected_behavior": "ChatGPT reformats the text itself. It does not call edit_pdf_file or open_pdf_editor."
+        }
+    ]
+}
