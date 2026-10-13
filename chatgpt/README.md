@@ -31,7 +31,7 @@ app/storage.js        no-op session storage (the iframe has no IndexedDB)
 scripts/build.mjs     inlines pdf.js, pdf-lib, the site editor and app/editor.js into dist/app-html.js
 scripts/serve.mjs     local HTTP server for api/mcp.js
 test/                 server round trip, Playwright host test, and the AppBridge test host
-.well-known/          OpenAI domain verification token
+public/.well-known/   OpenAI domain verification token (the static output directory)
 ```
 
 The build reads `layout.js`, `export.js`, `app.js`, `styles.css` and `favicon.svg` from the repository root, so the editor stays one codebase.
@@ -74,6 +74,6 @@ ChatGPT caches tool metadata. After you change a tool or the UI resource, refres
 2. Keep **Include files outside the root directory in the Build Step** turned on. The build reads the editor files from the repository root.
 3. `vercel.json` sets the build command to `npm run build`. The function `api/mcp.js` imports `dist/app-html.js`, so the build must run before the function is packaged.
 4. The MCP endpoint is `https://<deployment>/api/mcp`.
-5. Replace the contents of `.well-known/openai-apps-challenge` with the token from the OpenAI dashboard before you verify the domain.
+5. Replace the contents of `public/.well-known/openai-apps-challenge` with the token from the OpenAI dashboard before you verify the domain.
 
 The `resources/read` response for the editor is about 2.4 MB, below the 4.5 MB Vercel response limit.
