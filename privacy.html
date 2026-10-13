@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy | PDFSpacer</title>
+    <meta name="description" content="How the PDFSpacer website and the PDFSpacer plugin for ChatGPT handle data. Your PDF is processed on your device and never reaches our servers.">
+    <link rel="canonical" href="https://www.pdfspacer.com/privacy">
+    <meta name="robots" content="index, follow">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="stylesheet" href="/pages.css?v=20260929">
+</head>
+<body>
+    <header>
+        <div class="wrap">
+            <a href="/">PDFSpacer</a>
+            <a class="btn" href="/">Add space to a PDF</a>
+        </div>
+    </header>
+    <main class="wrap">
+        <h1>Privacy policy</h1>
+        <p>Last updated: 13 October 2026</p>
+        <p>This policy covers the PDFSpacer website at www.pdfspacer.com and the PDFSpacer plugin for ChatGPT.
+            "We" means PDFSpacer. PDFSpacer adds writing space between the questions of a PDF.</p>
+        <h2 id="summary">Summary</h2>
+        <ul>
+            <li><strong>Your PDF stays with you.</strong> It is opened and processed on your device. Our servers never receive it.</li>
+            <li><strong>No accounts.</strong> You do not sign up or log in.</li>
+            <li><strong>No analytics or tracking.</strong> The site loads no analytics, advertising or tracking scripts, and our code sets no cookies.</li>
+            <li><strong>Request logs.</strong> Our host, Vercel, receives standard request data such as IP addresses.</li>
+        </ul>
+        <h2 id="website">The website</h2>
+        <h3>Your PDF</h3>
+        <p>When you open a PDF on www.pdfspacer.com, the editor reads it in your browser. Displaying the pages,
+            adding space and exporting all happen on your device. The PDF is not uploaded to us or to anyone else.</p>
+        <h3>Scripts and libraries</h3>
+        <p>We checked the HTML and scripts of this site on 13 October 2026. The pages load no analytics,
+            advertising or tracking scripts, and our code sets no cookies. Besides our own files, the editor page
+            loads two libraries from public content delivery networks (CDNs):</p>
+        <ul>
+            <li>PDF.js 3.11.174 and its worker from cdnjs.cloudflare.com, served by Cloudflare. It displays the PDF pages.</li>
+            <li>pdf-lib 1.17.1 from unpkg.com. It builds the exported PDF.</li>
+        </ul>
+        <p>Your browser downloads these files directly from the CDNs, so their operators receive standard request
+            data such as your IP address and browser user agent. They do not receive your PDF.</p>
+        <h3>Storage in your browser</h3>
+        <p>The editor saves your current PDF and your spacer layout in your browser's IndexedDB storage. This lets
+            it restore your session when you reload the page. The data stays in your browser on your device, and we
+            cannot read it. It remains until you remove it.</p>
+        <p>To remove it, choose <em>Project → Clear session</em> in the editor, or clear this site's data in your
+            browser settings. Older versions of the editor also saved the layout in localStorage. Clear session
+            deletes that copy too.</p>
+        <h3>Hosting</h3>
+        <p>Vercel hosts the website. To deliver each page, Vercel's servers receive standard request data: your
+            IP address, browser user agent, the page requested and the time. Vercel handles this data under the
+            <a href="https://vercel.com/legal/privacy-policy">Vercel privacy policy</a>.</p>
+        <h2 id="chatgpt">The PDFSpacer plugin for ChatGPT</h2>
+        <p>The plugin runs the PDFSpacer editor inside ChatGPT. It has two tools. <code>open_pdf_editor</code>
+            opens the editor, and you choose a PDF from your device inside it. <code>edit_pdf_file</code> opens a
+            PDF from a chat in the editor. Opening a PDF from a chat works in the ChatGPT desktop app.</p>
+        <h3>What ChatGPT gives the editor</h3>
+        <p>The editor runs in a frame inside ChatGPT on your device. When you open a PDF from a chat, ChatGPT
+            gives the editor the file name and the contents of the PDF. When you open the editor from the ChatGPT
+            sidebar or a chat tab, you choose a PDF from your device instead.</p>
+        <p>The editor makes no network requests. <em>Save to ChatGPT</em> sends the spaced PDF back to ChatGPT,
+            which replaces the file in the chat. <em>Download</em> saves a copy to your device.</p>
+        <h3>What our server receives</h3>
+        <p>Our MCP server at pdfspacer-chatgpt.vercel.app gives ChatGPT the list of tools and the HTML of the
+            editor. It never receives your PDF.</p>
+        <p>ChatGPT calls one of the tools when the editor opens. <code>open_pdf_editor</code> has no arguments.
+            <code>edit_pdf_file</code> includes the name of the file and an opaque reference that ChatGPT uses to
+            find the file. The reference does not contain the PDF.</p>
+        <p>OpenAI documents that ChatGPT can also attach metadata to tool calls: your language setting, a user
+            agent hint, a coarse location such as city and country, and anonymized IDs for your account,
+            conversation and organization. Our server does not use or store the file name, the reference or this
+            metadata. It does not receive your chats.</p>
+        <h3>Request logs</h3>
+        <p>Vercel hosts our MCP server and keeps ordinary request logs for it: the IP address each request came
+            from, the user agent and the time. These logs do not contain your PDF. Vercel deletes them after the
+            retention period of our hosting plan, which Vercel documents as between 1 hour and 30 days in its
+            <a href="https://vercel.com/docs/logs/runtime#limits">runtime logs documentation</a>.</p>
+        <h3>ChatGPT and OpenAI</h3>
+        <p>OpenAI handles your chats and files in ChatGPT under the
+            <a href="https://openai.com/policies/privacy-policy/">OpenAI privacy policy</a>.</p>
+        <h2 id="data">Data, purposes and retention</h2>
+        <ul>
+            <li><strong>Data we handle:</strong> request data in Vercel's logs (IP address, user agent, time and
+                the page or endpoint requested). For the plugin, also the tool calls described above, which our
+                server does not store.</li>
+            <li><strong>Purpose:</strong> to deliver the website and the plugin and to keep them working.</li>
+            <li><strong>Recipients:</strong> Vercel, which hosts the website and the plugin server. For the website,
+                also the CDNs that serve PDF.js and pdf-lib. We do not sell this data or share it with anyone else.</li>
+            <li><strong>Retention:</strong> Vercel's request logs follow the retention period above. Data in your
+                browser stays until you clear it. We keep nothing else.</li>
+            <li><strong>Your controls:</strong> use <em>Clear session</em> in the editor, clear this site's data in
+                your browser, or remove the plugin from ChatGPT.</li>
+        </ul>
+        <h2 id="contact">Contact</h2>
+        <p>For questions about this policy, open an issue at
+            <a href="https://github.com/rishabhsai/pdfspacer/issues">github.com/rishabhsai/pdfspacer/issues</a>.
+            Issues are public, so do not include personal details or attach your PDF.</p>
+        <h2 id="changes">Changes to this policy</h2>
+        <p>If this policy changes, we will update this page and the date at the top.</p>
+    </main>
+    <footer>
+        <div class="wrap"><p><a href="/">PDFSpacer</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p></div>
+    </footer>
+</body>
+</html>
