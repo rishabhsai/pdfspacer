@@ -6,6 +6,7 @@
 - `styles.css` — UI styles (buttons, layout, viewer, overlays).
 - `guide.html` plus `add-answer-space-to-past-papers.html`, `add-lines-to-pdf-worksheet.html`, `add-space-to-pdf-for-notes.html`, `pdf-homework-spacer.html` — static SEO/guide pages sharing `pages.css`; served at clean URLs (no `.html`) by `vercel.json`. Add new pages to `sitemap.xml` with a `lastmod`.
 - `it.html`, `es.html`, `it/spazio-pdf-appunti.html`, `es/espacio-pdf-apuntes.html` — Italian and Spanish landing and notes pages, linked with `hreflang` from the English homepage and notes page. The editor itself stays in English; these pages describe it and link to `/`.
+- `privacy.html`, `terms.html`: privacy policy and terms of use for the site and the ChatGPT plugin, served at `/privacy` and `/terms`; linked from the homepage footer and listed in `sitemap.xml`.
 - `images/` — real product screenshots (WebP) used by the landing and guide pages.
 - `demo.html` — legacy redirect to the guide.
 - `README.md` — usage overview and notes.

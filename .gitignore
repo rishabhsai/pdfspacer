@@ -1,2 +1,4 @@
 .vercel
 .env*
+chatgpt/dist/
+chatgpt/node_modules/
