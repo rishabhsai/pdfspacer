@@ -26,12 +26,11 @@
             "source": "/demo",
             "destination": "/guide",
             "permanent": true
-        }
-    ],
-    "rewrites": [
+        },
         {
             "source": "/chatgpt/(.*)",
-            "destination": "/chatgpt-plugin-source-is-not-served"
+            "destination": "/",
+            "permanent": false
         }
     ]
 }
