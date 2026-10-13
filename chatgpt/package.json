@@ -1,0 +1,26 @@
+{
+    "name": "pdfspacer-chatgpt",
+    "version": "0.1.0",
+    "private": true,
+    "description": "PDFSpacer MCP server and MCP App for ChatGPT.",
+    "type": "module",
+    "engines": {
+        "node": ">=22"
+    },
+    "scripts": {
+        "build": "node scripts/build.mjs",
+        "test": "node test/server.test.mjs && node test/app.test.mjs"
+    },
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "1.32.1",
+        "@openai/mcp-extensions": "0.1.0",
+        "zod": "4.4.3"
+    },
+    "devDependencies": {
+        "@modelcontextprotocol/ext-apps": "1.7.5",
+        "esbuild": "0.28.2",
+        "pdf-lib": "1.17.1",
+        "pdfjs-dist": "3.11.174",
+        "playwright": "1.58.2"
+    }
+}

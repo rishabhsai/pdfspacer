@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDFSpacer</title>
+    <!-- APP_STYLES -->
+    <style>
+        #documentName { padding-left:0; }
+    </style>
+</head>
+
+<body>
+    <input type="file" id="pdfInput" accept=".pdf,application/pdf" hidden>
+    <input type="file" id="projectInput" accept=".json,application/json" hidden>
+    <main id="editor" aria-label="PDF spacer editor">
+        <header class="editor-header"><span id="documentName">Add writing space to your PDF</span><button class="btn" data-choose-pdf>Open PDF</button><details class="project-menu"><summary class="btn">Project</summary><div><button id="saveProjectBtn" data-requires-pdf disabled>Download layout</button><button id="loadProjectBtn" data-requires-pdf disabled>Load layout</button><button id="clearProjectBtn" data-requires-pdf disabled>Clear all spaces</button><button id="clearSessionBtn" disabled hidden>Clear session</button></div></details><button class="btn primary" id="saveToChatGptBtn" data-requires-pdf disabled hidden>Save to ChatGPT</button><button class="btn primary" id="exportPdfBtn" data-requires-pdf disabled>Export PDF</button></header>
+        <div class="editor-toolbar"><div class="tool-group"><button class="btn" id="addSpaceBtn" data-requires-pdf disabled aria-pressed="true">+ Add space</button><button class="btn" id="selectBtn" data-requires-pdf disabled aria-pressed="false">Select</button></div><div class="tool-group"><button class="btn" id="undoBtn" disabled title="Undo (Ctrl/Cmd+Z)">↶ <span>Undo</span></button><button class="btn" id="redoBtn" disabled title="Redo (Ctrl/Cmd+Shift+Z)">↷ <span>Redo</span></button></div><div class="zoom-controls"><button class="btn" id="zoomOutBtn" data-requires-pdf disabled aria-label="Zoom out">−</button><span id="zoomLevel">100%</span><button class="btn" id="zoomInBtn" data-requires-pdf disabled aria-label="Zoom in">+</button><button class="btn" id="fitWidthBtn" data-requires-pdf disabled>Fit</button></div><label class="breaks-label"><input type="checkbox" id="showBreaksToggle" data-requires-pdf disabled checked> A4 breaks</label></div>
+        <div class="editor-workspace"><div id="viewerContainer" class="viewer-container">
+                <section id="landing" class="empty-workspace" aria-labelledby="upload-heading">
+                    <div class="upload-panel">
+                        <svg class="upload-icon" width="44" height="52" viewBox="0 0 44 52" fill="none" aria-hidden="true"><path d="M8 2h18l12 12v36H8V2Z" stroke="currentColor" stroke-width="2"/><path d="M26 2v12h12M23 37V23m-6 6 6-6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h1 id="upload-heading">Add space to a PDF</h1>
+                        <p>Choose a PDF to insert blank, ruled, squared or dot-grid writing space between its questions.</p>
+                        <button class="btn primary" data-choose-pdf>Choose PDF</button>
+                        <button id="sampleBtn" disabled hidden></button>
+                        <p class="privacy">PDFSpacer never receives your PDF. It is processed inside this window.</p>
+                    </div>
+                </section>
+                <div id="pdfViewer" class="pdf-viewer placing" hidden></div>
+            </div><aside class="sidebar"><h2>Writing space</h2><div id="spacerProperties"><p class="muted">Open a PDF to add and edit writing space.</p></div><p class="sidebar-note">Measurements show the size on exported A4 paper. Use Export → Preview to check the final pages.</p></aside></div>
+    </main>
+    <div id="status" role="status" aria-live="polite"></div>
+    <dialog id="exportDialog"><h2>Export PDF</h2><p>Choose a page layout. Save to ChatGPT uses the same layout.</p><label class="export-option"><input type="radio" name="exportMode" value="paginated" checked><span><strong>Paginated A4</strong><small>Continuous content across printable A4 pages.</small></span></label><label class="export-option"><input type="radio" name="exportMode" value="long"><span><strong>Single long page</strong><small>One continuous sheet for digital writing and scrolling.</small></span></label><p class="muted">Original text and graphics stay sharp. Forms, annotations and clickable links are not included.</p><div class="dialog-actions"><button class="btn" id="exportCancelBtn">Cancel</button><button class="btn" id="previewBtn">Preview</button><button class="btn primary" id="exportConfirmBtn">Download PDF</button></div></dialog>
+    <dialog id="previewDialog"><div class="preview-heading"><h2>Export preview</h2><button class="btn" id="closePreviewBtn">Close preview</button></div><div id="previewPages"></div></dialog>
+    <!-- APP_SCRIPT -->
+</body>
+</html>
