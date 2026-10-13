@@ -16,7 +16,7 @@ import { OpenAIExtensions, OpenAIFileEntrypointInputSchema } from '@openai/mcp-e
 
 const PDF_TYPE = 'application/pdf';
 
-const megabytes = bytes => `${Math.floor(bytes / 104857.6) / 10} MB`;
+const formatBytes = bytes => bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.ceil(bytes / 1024)} KB`;
 
 /** What the editor says and does for each `openai/resources/write` outcome. */
 const saveOutcomes = {
@@ -30,7 +30,7 @@ const saveOutcomes = {
         follow: (actions, result, request) => actions.openHostFile(request.source),
     },
     'too-large': {
-        message: result => `ChatGPT can save files up to ${megabytes(result.maxBytes)}. Use Export PDF to download this one instead.`,
+        message: result => `ChatGPT can save files up to ${formatBytes(result.maxBytes)}. Use Export PDF to download this one instead.`,
         error: true,
         follow: () => {},
     },
