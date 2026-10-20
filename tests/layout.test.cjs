@@ -65,3 +65,40 @@ test('a spacer spanning an A4 boundary keeps its pattern phase', () => {
     near(spaces[1].patternOffset, spaces[0].height);
     near(spaces.reduce((sum, item) => sum + item.height, 0), 100);
 });
+test('a full blank page after every page lands on its own A4 sheet for any source size', () => {
+    let counter = 0;
+    const options = { id: () => `every-${counter++}`, style: 'ruled', ruleSpacing: 20, dotPitch: 10, gridSize: 20, fullPage: true, height: 0 };
+    const letter = { width: 612, height: 792 };
+    const a4 = { width: layout.WIDTH, height: layout.HEIGHT };
+    const geometry = [letter, a4, letter];
+    const state = layout.validate(layout.afterEveryPage(geometry, { 2: [{ ...spacer, y: 100 }] }, options), geometry);
+    assert.equal(Object.values(state).flat().length, 4);
+    const output = layout.paginate(layout.document(geometry, state), 'paginated');
+    // Page 2 carries a spacer, so its content spans two sheets before its blank page.
+    assert.equal(output.length, 7);
+    for (const index of [1, 4, 6]) {
+        assert.ok(output[index].items.every(item => item.type === 'spacer'), `sheet ${index + 1} should be blank`);
+        near(output[index].items.reduce((sum, item) => sum + item.height, 0), layout.HEIGHT);
+    }
+    assert.ok(output[0].items.some(item => item.type === 'slice' && item.pageNumber === 1));
+    assert.ok(output[2].items.some(item => item.type === 'slice' && item.pageNumber === 2));
+    assert.ok(output[3].items.some(item => item.type === 'slice' && item.pageNumber === 2));
+    assert.ok(output[5].items.some(item => item.type === 'slice' && item.pageNumber === 3));
+});
+test('a fixed height after every page converts output points to source units', () => {
+    const geometry = [{ width: 300, height: 500 }];
+    const state = layout.afterEveryPage(geometry, {}, { id: () => 'x', style: 'plain', ruleSpacing: 20, dotPitch: 10, gridSize: 20, fullPage: false, height: 200 });
+    near(state[1][0].height * (layout.WIDTH / 300), 200);
+    assert.equal(state[1][0].y, 500);
+});
+test('A4 sources rounded by PDF.js do not spill a sliver onto an extra sheet', () => {
+    const rounded = { width: 595.2756, height: 841.8898 };
+    const geometry = Array.from({ length: 30 }, () => rounded);
+    assert.equal(layout.paginate(layout.document(geometry, {}), 'paginated').length, 30);
+    let counter = 0;
+    const options = { id: () => `every-${counter++}`, style: 'plain', ruleSpacing: 20, dotPitch: 10, gridSize: 20, fullPage: true, height: 0 };
+    const state = layout.afterEveryPage(geometry, {}, options);
+    const output = layout.paginate(layout.document(geometry, state), 'paginated');
+    assert.equal(output.length, 60);
+    for (let index = 1; index < 60; index += 2) assert.ok(output[index].items.every(item => item.type === 'spacer'), `sheet ${index + 1} should be blank`);
+});

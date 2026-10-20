@@ -4,7 +4,7 @@
 - `index.html` — main application UI; loads PDF.js and jsPDF from CDNs and `app.js`.
 - `app.js` — core logic (`PDFAnswerSpacer` class), rendering, spacer tools, and export.
 - `styles.css` — UI styles (buttons, layout, viewer, overlays).
-- `guide.html` plus `add-answer-space-to-past-papers.html`, `add-lines-to-pdf-worksheet.html`, `add-space-to-pdf-for-notes.html`, `pdf-homework-spacer.html` — static SEO/guide pages sharing `pages.css`; served at clean URLs (no `.html`) by `vercel.json`. Add new pages to `sitemap.xml` with a `lastmod`.
+- `guide.html` plus `add-answer-space-to-past-papers.html`, `add-lines-to-pdf-worksheet.html`, `add-space-to-pdf-for-notes.html`, `pdf-homework-spacer.html`, `insert-blank-page-after-every-page-pdf.html` — static SEO/guide pages sharing `pages.css`; served at clean URLs (no `.html`) by `vercel.json`. Add new pages to `sitemap.xml` with a `lastmod`.
 - `it.html`, `es.html`, `it/spazio-pdf-appunti.html`, `es/espacio-pdf-apuntes.html` — Italian and Spanish landing and notes pages, linked with `hreflang` from the English homepage and notes page. The editor itself stays in English; these pages describe it and link to `/`.
 - `privacy.html`, `terms.html`: privacy policy and terms of use for the site and the ChatGPT plugin, served at `/privacy` and `/terms`; linked from the homepage footer and listed in `sitemap.xml`.
 - `images/` — real product screenshots (WebP) used by the landing and guide pages.
@@ -39,6 +39,7 @@ Viewer/Rendering architecture
 - Placement guide: currently not exposed in UI.
 - Context menu: edit, delete, duplicate.
 - Last-used spacer preset remembered and applied to new spacers.
+- `Every page` toolbar button opens a dialog that appends one spacer to the foot of every page (`SpacerLayout.afterEveryPage`); the full-page option pads to the next A4 boundary so each blank page is its own sheet. The same button and dialog exist in `chatgpt/app/index.html`.
 - Export pipelines: PDF.js rendering onto canvases; optional continuous-flow pagination (enabled by default in Paginated mode).
 
 ## Testing Guidelines

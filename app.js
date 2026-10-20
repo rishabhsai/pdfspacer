@@ -43,6 +43,10 @@ class PDFAnswerSpacer {
         this.$('fitWidthBtn').onclick = () => this.fitWidth();
         this.$('showBreaksToggle').onchange = () => this.updateBreaks();
         this.$('exportPdfBtn').onclick = () => { this.$('exportDialog').showModal(); };
+        this.$('everyPageBtn').onclick = () => { this.$('everyPageStyle').value = this.preset.style; this.$('everyPageDialog').showModal(); };
+        this.$('everyPageCancelBtn').onclick = () => this.$('everyPageDialog').close();
+        this.$('everyPageConfirmBtn').onclick = () => this.addToEveryPage();
+        this.$('everyPageHeight').onfocus = () => { document.querySelector('input[name="everyPageSize"][value="custom"]').checked = true; };
         this.$('exportCancelBtn').onclick = () => this.$('exportDialog').close();
         this.$('exportConfirmBtn').onclick = () => this.exportPDF();
         this.$('previewBtn').onclick = () => this.exportPDF(true);
@@ -344,6 +348,19 @@ class PDFAnswerSpacer {
         const copy = { ...spacer, id: crypto.randomUUID(), y: Math.min(this.geometry[pageNumber - 1].height, spacer.y + 20) };
         this.selected = { pageNumber, id: copy.id };
         this.commit({ ...this.history.current, [pageNumber]: [...this.history.current[pageNumber], copy] });
+    }
+    addToEveryPage() {
+        const size = document.querySelector('input[name="everyPageSize"]:checked').value;
+        const input = this.$('everyPageHeight');
+        if (size === 'custom' && (!input.checkValidity() || !Number.isFinite(input.valueAsNumber))) { input.reportValidity(); return; }
+        const style = this.$('everyPageStyle').value;
+        const mm = size === 'half' ? 148.5 : input.valueAsNumber;
+        const state = SpacerLayout.afterEveryPage(this.geometry, this.history.current, { ...this.preset, style, id: () => crypto.randomUUID(), fullPage: size === 'full', height: mm * 72 / 25.4 });
+        this.preset = { ...this.preset, style };
+        this.selected = null;
+        this.$('everyPageDialog').close();
+        this.commit(state);
+        this.status(size === 'full' ? `Added a blank page after each of the ${this.geometry.length} pages` : `Added ${Math.round(mm)} mm of writing space after each of the ${this.geometry.length} pages`);
     }
     updateProperties() {
         const panel = this.$('spacerProperties');

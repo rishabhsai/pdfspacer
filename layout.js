@@ -2,6 +2,8 @@
 const SpacerLayout = (() => {
     const WIDTH = 595.275590551;
     const HEIGHT = 841.88976378;
+    // PDF.js rounds page sizes, so an A4 source can overrun a sheet by a few microns; slivers below this are dropped rather than spilling onto a new sheet.
+    const EPSILON = 0.05;
     const styles = ['plain', 'ruled', 'squared', 'dot-grid'];
     const number = (value, min, max, name) => {
         if (typeof value !== 'number' || !Number.isFinite(value) || value < min || value > max) {
@@ -66,6 +68,27 @@ const SpacerLayout = (() => {
         });
         return { pages, height };
     }
+    /* Appends one spacer to the foot of every page. `height` is output points; a full page is padded so it begins on a fresh A4 sheet. */
+    function afterEveryPage(geometry, state, options) {
+        const { id, style, ruleSpacing, dotPitch, gridSize } = options;
+        const result = { ...state };
+        let offset = 0;
+        geometry.forEach((size, index) => {
+            const number = index + 1;
+            const layout = page(size, result[number]);
+            const end = offset + layout.height;
+            let height = options.height;
+            if (options.fullPage) {
+                const remainder = end % HEIGHT;
+                const pad = remainder < EPSILON || HEIGHT - remainder < EPSILON ? 0 : HEIGHT - remainder;
+                height = HEIGHT + pad;
+            }
+            const spacer = { id: id(), y: size.height, height: height / layout.factor, style, ruleSpacing, dotPitch, gridSize };
+            result[number] = [...(result[number] || []), spacer];
+            offset = end + height;
+        });
+        return result;
+    }
     function sourceAt(layout, top) {
         const point = Math.max(0, Math.min(top, layout.height));
         for (const item of layout.items) {
@@ -82,12 +105,12 @@ const SpacerLayout = (() => {
         for (const source of layout.pages) {
             for (const item of source.items) {
                 let used = 0;
-                while (used < item.height - 1e-7) {
+                while (used < item.height - EPSILON) {
                     const absolute = source.offset + item.top + used;
-                    const index = Math.floor((absolute + 1e-7) / pageHeight);
+                    const index = Math.floor((absolute + EPSILON) / pageHeight);
                     const top = Math.max(0, absolute - index * pageHeight);
                     const height = Math.min(item.height - used, pageHeight - top);
-                    if (height < 1e-7) break;
+                    if (height < EPSILON) break;
                     pages[index] ??= { width: WIDTH, height: pageHeight, items: [] };
                     pages[index].items.push({ ...item, pageNumber: source.pageNumber, top, height,
                         sourceY: item.type === 'slice' ? item.sourceY + used / item.factor : undefined,
@@ -111,5 +134,5 @@ const SpacerLayout = (() => {
         undo() { if (this.past.length) { this.future.push(this.current); this.current = this.past.pop(); return true; } return false; }
         redo() { if (this.future.length) { this.past.push(this.current); this.current = this.future.pop(); return true; } return false; }
     }
-    return { WIDTH, HEIGHT, validate, page, document, sourceAt, paginate, History };
+    return { WIDTH, HEIGHT, validate, page, document, afterEveryPage, sourceAt, paginate, History };
 })();

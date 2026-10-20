@@ -588,3 +588,27 @@ body:not(.editing) .sidebar-note { display:none; }
 .landing-faq details>p { padding:0 0 14px; color:var(--muted); }
 .landing-footer { font-size:13px; color:var(--muted); text-align:center; }
 .landing-footer a { color:var(--muted); margin:0 8px; }
+
+.dialog-field {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-top:14px;
+    font-size:14px;
+}
+
+.dialog-field select,.export-option input[type=number] {
+    background:#fff;
+    border:1px solid #c9d1c6;
+    color:var(--ink);
+    border-radius:4px;
+    padding:8px;
+    font-size:14px;
+}
+
+.export-option input[type=number] {
+    width:5.5em;
+    padding:4px 6px;
+    font-size:12px;
+}
