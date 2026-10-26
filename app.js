@@ -355,12 +355,13 @@ class PDFAnswerSpacer {
         if (size === 'custom' && (!input.checkValidity() || !Number.isFinite(input.valueAsNumber))) { input.reportValidity(); return; }
         const style = this.$('everyPageStyle').value;
         const mm = size === 'half' ? 148.5 : input.valueAsNumber;
-        const state = SpacerLayout.afterEveryPage(this.geometry, this.history.current, { ...this.preset, style, id: () => crypto.randomUUID(), fullPage: size === 'full', height: mm * 72 / 25.4 });
+        const state = SpacerLayout.afterEveryPage(this.geometry, this.history.current, { ...this.preset, style, id: () => crypto.randomUUID(), fullPage: size === 'full', fill: size === 'fill', height: mm * 72 / 25.4 });
         this.preset = { ...this.preset, style };
         this.selected = null;
         this.$('everyPageDialog').close();
         this.commit(state);
-        this.status(size === 'full' ? `Added a blank page after each of the ${this.geometry.length} pages` : `Added ${Math.round(mm)} mm of writing space after each of the ${this.geometry.length} pages`);
+        const count = this.geometry.length;
+        this.status(size === 'full' ? `Added a blank page after each of the ${count} pages` : size === 'fill' ? `Filled the rest of the sheet after each of the ${count} pages` : `Added ${Math.round(mm)} mm of writing space after each of the ${count} pages`);
     }
     updateProperties() {
         const panel = this.$('spacerProperties');
