@@ -68,7 +68,9 @@ const SpacerLayout = (() => {
         });
         return { pages, height };
     }
-    /* Appends one spacer to the foot of every page. `height` is output points; a full page is padded so it begins on a fresh A4 sheet. */
+    // Below this much room left on a sheet, "fill" adds a whole extra sheet of writing space as well.
+    const MIN_FILL = 40 * 72 / 25.4;
+    /* Appends one spacer to the foot of every page. `height` is output points; `fullPage` pads so the page begins on a fresh A4 sheet; `fill` runs to the end of the current sheet. */
     function afterEveryPage(geometry, state, options) {
         const { id, style, ruleSpacing, dotPitch, gridSize } = options;
         const result = { ...state };
@@ -78,10 +80,10 @@ const SpacerLayout = (() => {
             const layout = page(size, result[number]);
             const end = offset + layout.height;
             let height = options.height;
-            if (options.fullPage) {
+            if (options.fullPage || options.fill) {
                 const remainder = end % HEIGHT;
                 const pad = remainder < EPSILON || HEIGHT - remainder < EPSILON ? 0 : HEIGHT - remainder;
-                height = HEIGHT + pad;
+                height = options.fullPage || pad < MIN_FILL ? HEIGHT + pad : pad;
             }
             const spacer = { id: id(), y: size.height, height: height / layout.factor, style, ruleSpacing, dotPitch, gridSize };
             result[number] = [...(result[number] || []), spacer];

@@ -102,3 +102,17 @@ test('A4 sources rounded by PDF.js do not spill a sliver onto an extra sheet', (
     assert.equal(output.length, 60);
     for (let index = 1; index < 60; index += 2) assert.ok(output[index].items.every(item => item.type === 'spacer'), `sheet ${index + 1} should be blank`);
 });
+test('filling the sheet runs to the next A4 boundary, or adds a sheet when little room is left', () => {
+    let counter = 0;
+    const options = { id: () => `fill-${counter++}`, style: 'ruled', ruleSpacing: 20, dotPitch: 10, gridSize: 20, fill: true, height: 0 };
+    const slide = { width: 720, height: 405 };
+    const a4 = { width: layout.WIDTH, height: layout.HEIGHT };
+    const geometry = [slide, slide, a4];
+    const state = layout.afterEveryPage(geometry, {}, options);
+    const output = layout.paginate(layout.document(geometry, state), 'paginated');
+    assert.equal(output.length, 4);
+    near(output[0].items.reduce((sum, item) => sum + item.height, 0), layout.HEIGHT);
+    assert.ok(output[0].items.some(item => item.type === 'spacer') && output[0].items.some(item => item.type === 'slice'));
+    assert.ok(output[1].items.some(item => item.type === 'slice' && item.pageNumber === 2));
+    assert.ok(output[3].items.every(item => item.type === 'spacer'), 'an A4 page gets a whole extra sheet');
+});
