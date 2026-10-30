@@ -19,14 +19,14 @@
     </header>
     <main class="wrap">
         <h1>Privacy policy</h1>
-        <p>Last updated: 13 October 2026</p>
+        <p>Last updated: 30 October 2026</p>
         <p>This policy covers the PDFSpacer website at www.pdfspacer.com and the PDFSpacer plugin for ChatGPT.
             "We" means PDFSpacer. PDFSpacer adds writing space between the questions of a PDF.</p>
         <h2 id="summary">Summary</h2>
         <ul>
             <li><strong>Your PDF never reaches our servers.</strong> It is opened and processed on your device.</li>
             <li><strong>No accounts.</strong> You do not sign up or log in.</li>
-            <li><strong>No analytics or tracking.</strong> The site loads no analytics, advertising or tracking scripts, and our code sets no cookies.</li>
+            <li><strong>Anonymous usage counts, no cookies.</strong> We count page views, exports and feedback with PostHog. The counter sets no cookies, stores nothing on your device, keeps no profile of you and never sees your PDF. It is off when your browser sends Do Not Track or Global Privacy Control.</li>
             <li><strong>Request logs.</strong> Our host, Vercel, receives standard request data such as IP addresses.</li>
         </ul>
         <h2 id="website">The website</h2>
@@ -34,13 +34,29 @@
         <p>When you open a PDF on www.pdfspacer.com, the editor reads it in your browser. Displaying the pages,
             adding space and exporting all happen on your device. The PDF is not uploaded to us or to anyone else.</p>
         <h3>Scripts and libraries</h3>
-        <p>We checked the HTML and scripts of this site on 13 October 2026. The pages load no analytics,
-            advertising or tracking scripts, and our code sets no cookies. Besides our own files, the editor page
-            loads two libraries from public content delivery networks (CDNs):</p>
+        <p>We checked the HTML and scripts of this site on 30 October 2026. The pages load no advertising or
+            tracking scripts, and our code sets no cookies. Besides our own files, the editor page loads two
+            libraries from public content delivery networks (CDNs):</p>
         <ul>
             <li>PDF.js 3.11.174 and its worker from cdnjs.cloudflare.com, served by Cloudflare. It displays the PDF pages.</li>
             <li>pdf-lib 1.17.1 from unpkg.com. It builds the exported PDF.</li>
         </ul>
+        <h3>Usage counts</h3>
+        <p>Every page loads our <code>analytics.js</code>, which sends a small number of events to PostHog
+            (PostHog Inc., US hosting): a page view, and in the editor the events <em>pdf_opened</em>,
+            <em>spacer_added</em>, <em>every_page_added</em>, <em>pdf_exported</em> and <em>share_clicked</em>. Each event
+            carries counts and settings only, such as the number of pages, the paper style and the export layout,
+            plus the standard request data PostHog receives (IP address, user agent, page URL). It never carries
+            your PDF, its name or its text.</p>
+        <p>The counter runs in memory only. It sets no cookies and writes nothing to your device, so each page load
+            is counted as a new anonymous visitor, and PostHog's person profiles are turned off. If your browser
+            sends Do Not Track or Global Privacy Control, the script does not load at all. PostHog processes this
+            data under the <a href="https://posthog.com/privacy">PostHog privacy policy</a>.</p>
+        <h3>Feedback</h3>
+        <p>The editor has a feedback form. When you send it, we receive the type you picked, your message and, only
+            if you typed one, your email address, together with the number of pages in the open PDF and your browser
+            user agent. It is delivered through PostHog as a <em>feedback</em> event. We use it to reply to you and to
+            improve PDFSpacer, and we delete it when it is no longer needed for that.</p>
         <p>Your browser downloads these files directly from the CDNs, so their operators receive standard request
             data such as your IP address and browser user agent. They do not receive your PDF.</p>
         <h3>Storage in your browser</h3>
@@ -85,11 +101,12 @@
         <h2 id="data">Data, purposes and retention</h2>
         <ul>
             <li><strong>Data we handle:</strong> request data in Vercel's logs (IP address, user agent, time and
-                the page or endpoint requested). For the plugin, also the tool calls described above, which our
+                the page or endpoint requested); the anonymous usage events and any feedback you send, described above. For the plugin, also the tool calls described above, which our
                 server does not store.</li>
             <li><strong>Purpose:</strong> to deliver the website and the plugin and to keep them working.</li>
             <li><strong>Recipients:</strong> Vercel, which hosts the website and the plugin server. For the website,
-                also the CDNs that serve PDF.js and pdf-lib. We do not sell this data or share it with anyone else.</li>
+                also the CDNs that serve PDF.js and pdf-lib, and PostHog for the usage counts and feedback above.
+                We do not sell this data or share it with anyone else.</li>
             <li><strong>Retention:</strong> Vercel's request logs follow the retention period above. Data in your
                 browser stays until you clear it. We keep nothing else.</li>
             <li><strong>Your controls:</strong> use <em>Clear session</em> in the editor, clear this site's data in
@@ -105,5 +122,6 @@
     <footer>
         <div class="wrap"><p><a href="/">PDFSpacer</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p></div>
     </footer>
+<script defer src="/analytics.js?v=20261030"></script>
 </body>
 </html>

@@ -7,6 +7,7 @@
 - `guide.html` plus `add-answer-space-to-past-papers.html`, `add-lines-to-pdf-worksheet.html`, `add-space-to-pdf-for-notes.html`, `pdf-homework-spacer.html`, `insert-blank-page-after-every-page-pdf.html`, `add-lines-to-pdf-slides-for-notes.html` — static SEO/guide pages sharing `pages.css`; served at clean URLs (no `.html`) by `vercel.json`. Add new pages to `sitemap.xml` with a `lastmod`.
 - `it.html`, `es.html`, `it/spazio-pdf-appunti.html`, `es/espacio-pdf-apuntes.html` — Italian and Spanish landing and notes pages, linked with `hreflang` from the English homepage and notes page. The editor itself stays in English; these pages describe it and link to `/`.
 - `privacy.html`, `terms.html`: privacy policy and terms of use for the site and the ChatGPT plugin, served at `/privacy` and `/terms`; linked from the homepage footer and listed in `sitemap.xml`.
+- `analytics.js` — cookieless PostHog wrapper loaded by every page; inert until `KEY` is set. `SpacerAnalytics.track(event, props)` is the only entry point; `app.js` calls it via `this.track`. Events: `pdf_opened`, `spacer_added`, `every_page_added`, `pdf_exported`, `share_clicked`, `feedback`.
 - `images/` — real product screenshots (WebP) used by the landing and guide pages.
 - `demo.html` — legacy redirect to the guide.
 - `README.md` — usage overview and notes.
@@ -40,6 +41,7 @@ Viewer/Rendering architecture
 - Context menu: edit, delete, duplicate.
 - Last-used spacer preset remembered and applied to new spacers.
 - `Every page` toolbar button opens a dialog that appends one spacer to the foot of every page (`SpacerLayout.afterEveryPage`); the full-page option pads to the next A4 boundary so each blank page is its own sheet; the fill option runs to the end of the current sheet (or adds a whole sheet when under 40 mm is left). The same button and dialog exist in `chatgpt/app/index.html`.
+- Export adds a small clickable "Made with pdfspacer.com" line to the last sheet unless the Export dialog checkbox is cleared (`SpacerExport.create(..., { credit })`). After a download the `#sharePrompt` dialog offers Copy link / Share, and `#feedbackDialog` (opened from any `[data-feedback]` link) sends a `feedback` event, or opens a prefilled GitHub issue when analytics is off. New element ids are bound with null checks because `chatgpt/app/index.html` does not have them.
 - Export pipelines: PDF.js rendering onto canvases; optional continuous-flow pagination (enabled by default in Paginated mode).
 
 ## Testing Guidelines
@@ -64,5 +66,5 @@ Known toggles and UX
 
 ## Security & Configuration Tips
 - Libraries are version‑pinned via CDN; update versions deliberately and test large PDFs.
-- Handle user PDFs locally; do not transmit files or add network calls.
+- Handle user PDFs locally; do not transmit files. The only permitted network calls are the pinned CDN libraries and the cookieless analytics events in `analytics.js`; keep `privacy.html` in step with them.
 - Avoid eval/dynamic script injection; keep DOM interactions scoped.
