@@ -50,6 +50,14 @@ class PDFAnswerSpacer {
         this.$('exportCancelBtn').onclick = () => this.$('exportDialog').close();
         this.$('exportConfirmBtn').onclick = () => this.exportPDF();
         this.$('previewBtn').onclick = () => this.exportPDF(true);
+        const bind = (id, handler) => { const element = this.$(id); if (element) element.onclick = handler; };
+        bind('copyLinkBtn', () => this.share('copy'));
+        bind('shareBtn', () => this.share('native'));
+        bind('shareDoneBtn', () => this.$('sharePrompt').close());
+        bind('feedbackCancelBtn', () => this.$('feedbackDialog').close());
+        bind('feedbackSendBtn', () => this.sendFeedback());
+        if (navigator.share && this.$('shareBtn')) this.$('shareBtn').hidden = false;
+        document.querySelectorAll('[data-feedback]').forEach(link => link.onclick = event => { event.preventDefault(); link.closest('details')?.removeAttribute('open'); this.openFeedback(); });
         this.$('closePreviewBtn').onclick = () => this.$('previewDialog').close();
         this.$('previewDialog').addEventListener('close', () => {
             this.$('previewPages').replaceChildren();
@@ -117,6 +125,7 @@ class PDFAnswerSpacer {
             this.updateProperties();
             this.updateHistory();
             this.$('addSpaceBtn').focus();
+            this.track('pdf_opened', { pages: geometry.length, sample: file instanceof URL, restored: Boolean(saved) });
             if (previous) previous.destroy();
             await this.persist({ name: this.pdfName, type: 'application/pdf', data: bytes });
         } catch (error) {
@@ -323,6 +332,7 @@ class PDFAnswerSpacer {
         const spacer = { ...this.preset, id: crypto.randomUUID(), y, height: 85 / layout.factor };
         this.selected = { id: spacer.id, pageNumber };
         this.commit({ ...this.history.current, [pageNumber]: [...(this.history.current[pageNumber] || []), spacer] });
+        this.track('spacer_added', { style: spacer.style });
     }
     select(id, pageNumber) { this.selected = { id, pageNumber }; this.highlight(); this.updateProperties(); }
     highlight() { this.viewer.querySelectorAll('.spacer').forEach(element => element.classList.toggle('selected', element.dataset.spacerId === this.selected?.id)); }
@@ -360,6 +370,7 @@ class PDFAnswerSpacer {
         this.selected = null;
         this.$('everyPageDialog').close();
         this.commit(state);
+        this.track('every_page_added', { size, style });
         const count = this.geometry.length;
         this.status(size === 'full' ? `Added a blank page after each of the ${count} pages` : size === 'fill' ? `Filled the rest of the sheet after each of the ${count} pages` : `Added ${Math.round(mm)} mm of writing space after each of the ${count} pages`);
     }
@@ -499,6 +510,46 @@ class PDFAnswerSpacer {
             document.querySelector('[data-choose-pdf]').focus();
         } catch (error) { this.status('Could not clear the saved session. Please try again.', true); }
     }
+    track(event, properties) {
+        window.SpacerAnalytics?.track(event, properties);
+    }
+    async share(method) {
+        const url = 'https://www.pdfspacer.com/?ref=share';
+        this.track('share_clicked', { method });
+        try {
+            if (method === 'native') {
+                await navigator.share({ title: 'PDFSpacer', text: 'Free tool that adds writing space to any PDF, with lines under questions or a notes page after every slide.', url });
+            } else {
+                await navigator.clipboard.writeText(url);
+                this.status('Link copied. Paste it to a classmate or colleague');
+            }
+        } catch (error) {
+            if (error.name !== 'AbortError') this.status('Could not share. The link is pdfspacer.com', true);
+        }
+    }
+    openFeedback() {
+        this.$('sharePrompt')?.close();
+        this.$('feedbackDialog').showModal();
+        this.$('feedbackMessage').focus();
+    }
+    sendFeedback() {
+        const message = this.$('feedbackMessage');
+        if (!message.checkValidity()) { message.reportValidity(); return; }
+        const type = this.$('feedbackType').value;
+        const text = message.value.trim();
+        if (window.SpacerAnalytics?.enabled) {
+            this.track('feedback', { type, message: text, email: this.$('feedbackEmail').value.trim() || undefined, pages: this.geometry.length || undefined, browser: navigator.userAgent });
+            this.status('Thanks, your feedback was sent');
+        } else {
+            const title = encodeURIComponent(`${type === 'bug' ? 'Bug' : 'Idea'}: ${text.slice(0, 60)}`);
+            const body = encodeURIComponent(`${text}\n\n---\n${navigator.userAgent}`);
+            window.open(`https://github.com/rishabhsai/pdfspacer/issues/new?title=${title}&body=${body}`, '_blank', 'noopener');
+            this.status('Thanks. Finish sending it on GitHub');
+        }
+        this.$('feedbackDialog').close();
+        message.value = '';
+        this.$('feedbackEmail').value = '';
+    }
     download(data, name, type = 'application/pdf') {
         const url = URL.createObjectURL(new Blob([data], { type }));
         const link = document.createElement('a'); link.href = url; link.download = name; link.click();
@@ -508,12 +559,13 @@ class PDFAnswerSpacer {
         if (this.exporting) return;
         this.exporting = true;
         const mode = document.querySelector('input[name="exportMode"]:checked').value;
+        const credit = this.$('creditToggle')?.checked ?? true;
         const filename = this.pdfName;
         this.$('exportConfirmBtn').disabled = true;
         this.$('previewBtn').disabled = true;
         try {
             this.status('Preparing PDF…');
-            const data = await SpacerExport.create(this.pdfData.slice(0), this.geometry, this.history.current, mode, fraction => this.status(`Preparing PDF… ${Math.round(fraction * 100)}%`));
+            const data = await SpacerExport.create(this.pdfData.slice(0), this.geometry, this.history.current, mode, fraction => this.status(`Preparing PDF… ${Math.round(fraction * 100)}%`), { credit });
             if (preview) {
                 this.$('previewDialog').showModal();
                 this.$('previewPages').textContent = 'Rendering preview…';
@@ -536,6 +588,8 @@ class PDFAnswerSpacer {
                 this.download(data, `${filename.replace(/\.pdf$/i, '')}-spaced.pdf`);
                 this.$('exportDialog').close();
                 this.status('PDF exported');
+                this.track('pdf_exported', { mode, credit, pages: this.geometry.length, spacers: Object.values(this.history.current).reduce((sum, list) => sum + list.length, 0) });
+                this.$('sharePrompt')?.showModal();
             }
         } catch (error) { this.status(`Could not export PDF: ${error.message}`, true); }
         finally { this.exporting = false; this.$('exportConfirmBtn').disabled = false; this.$('previewBtn').disabled = false; }

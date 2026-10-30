@@ -18,7 +18,24 @@ const SpacerExport = (() => {
             }
         }
     }
-    async function create(bytes, geometry, state, mode, progress = () => {}) {
+    const CREDIT = 'Made with pdfspacer.com';
+    const CREDIT_URL = 'https://www.pdfspacer.com/?ref=pdf';
+    /* A small clickable line in the bottom margin of the last sheet; the only way a shared export points back here. */
+    async function credit(output, page, layout, unit, lib) {
+        const font = await output.embedFont(lib.StandardFonts.Helvetica);
+        const size = 7.5;
+        const width = font.widthOfTextAtSize(CREDIT, size);
+        const x = layout.width - width - 20;
+        const y = 10;
+        page.drawText(CREDIT, { x, y, size, font, color: lib.rgb(0.55, 0.58, 0.6) });
+        const link = output.context.register(output.context.obj({
+            Type: 'Annot', Subtype: 'Link', Border: [0, 0, 0],
+            Rect: [x - 2, y - 3, x + width + 2, y + size + 2].map(value => value / unit),
+            A: { Type: 'Action', S: 'URI', URI: lib.PDFString.of(CREDIT_URL) }
+        }));
+        page.node.set(lib.PDFName.of('Annots'), output.context.obj([link]));
+    }
+    async function create(bytes, geometry, state, mode, progress = () => {}, options = { credit: true }) {
         const lib = PDFLib;
         const source = await lib.PDFDocument.load(bytes);
         const output = await lib.PDFDocument.create();
@@ -57,6 +74,7 @@ const SpacerExport = (() => {
                 page.drawPage(embedded.get(item.pageNumber), { x: 0, y: 0 });
                 page.pushOperators(lib.popGraphicsState());
             }
+            if (options.credit && index === layouts.length - 1) await credit(output, page, layout, unit, lib);
             page.pushOperators(lib.popGraphicsState());
             progress((index + 1) / layouts.length);
             await new Promise(resolve => setTimeout(resolve, 0));
