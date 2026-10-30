@@ -1,6 +1,6 @@
 /* Cookieless usage counts through PostHog. Nothing loads until a project key is set, and the PDF never leaves the browser. */
 const SpacerAnalytics = (() => {
-    const KEY = '';
+    const KEY = 'phc_mGZF2M9DeZQH8VMTKjTCWS9atYfveUFU8gfsecDMq79F';
     const HOST = 'https://us.i.posthog.com';
     const enabled = Boolean(KEY) && navigator.doNotTrack !== '1' && !navigator.globalPrivacyControl;
     const queue = [];
