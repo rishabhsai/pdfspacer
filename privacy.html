@@ -41,6 +41,8 @@
             <li>PDF.js 3.11.174 and its worker from cdnjs.cloudflare.com, served by Cloudflare. It displays the PDF pages.</li>
             <li>pdf-lib 1.17.1 from unpkg.com. It builds the exported PDF.</li>
         </ul>
+        <p>Your browser downloads these files directly from the CDNs, so their operators receive standard request
+            data such as your IP address and browser user agent. They do not receive your PDF.</p>
         <h3>Usage counts</h3>
         <p>Every page loads our <code>analytics.js</code>, which sends a small number of events to PostHog
             (PostHog Inc., US hosting): a page view, and in the editor the events <em>pdf_opened</em>,
@@ -57,8 +59,6 @@
             if you typed one, your email address, together with the number of pages in the open PDF and your browser
             user agent. It is delivered through PostHog as a <em>feedback</em> event. We use it to reply to you and to
             improve PDFSpacer, and we delete it when it is no longer needed for that.</p>
-        <p>Your browser downloads these files directly from the CDNs, so their operators receive standard request
-            data such as your IP address and browser user agent. They do not receive your PDF.</p>
         <h3>Storage in your browser</h3>
         <p>The editor saves your current PDF and your spacer layout in your browser's IndexedDB storage. This lets
             it restore your session when you reload the page. The data stays in your browser on your device, and we
@@ -108,7 +108,8 @@
                 also the CDNs that serve PDF.js and pdf-lib, and PostHog for the usage counts and feedback above.
                 We do not sell this data or share it with anyone else.</li>
             <li><strong>Retention:</strong> Vercel's request logs follow the retention period above. Data in your
-                browser stays until you clear it. We keep nothing else.</li>
+                browser stays until you clear it. Usage events stay in PostHog for up to twelve months. Feedback is
+                deleted once we have replied or acted on it. We keep nothing else.</li>
             <li><strong>Your controls:</strong> use <em>Clear session</em> in the editor, clear this site's data in
                 your browser, or remove the plugin from ChatGPT.</li>
         </ul>

@@ -57,7 +57,7 @@ class PDFAnswerSpacer {
         bind('feedbackCancelBtn', () => this.$('feedbackDialog').close());
         bind('feedbackSendBtn', () => this.sendFeedback());
         if (navigator.share && this.$('shareBtn')) this.$('shareBtn').hidden = false;
-        document.querySelectorAll('[data-feedback]').forEach(link => link.onclick = event => { event.preventDefault(); this.openFeedback(); });
+        document.querySelectorAll('[data-feedback]').forEach(link => link.onclick = event => { event.preventDefault(); link.closest('details')?.removeAttribute('open'); this.openFeedback(); });
         this.$('closePreviewBtn').onclick = () => this.$('previewDialog').close();
         this.$('previewDialog').addEventListener('close', () => {
             this.$('previewPages').replaceChildren();
