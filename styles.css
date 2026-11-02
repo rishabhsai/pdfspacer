@@ -652,3 +652,35 @@ body:not(.editing) .sidebar-note { display:none; }
 .dialog-note a,.sidebar-note a { color:inherit; text-decoration:underline; }
 
 .share-actions { justify-content:flex-start; }
+
+.chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+
+.chip {
+    padding:7px 13px;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:999px;
+    font:inherit;
+    font-size:13px;
+    cursor:pointer;
+}
+
+.chip:hover { background:#f0f4f8; }
+
+.chip[aria-pressed=true] { background:var(--blue); border-color:var(--blue); color:#fff; }
+
+.purpose-more { display:flex; gap:8px; margin-top:12px; }
+
+.purpose-more input {
+    flex:1;
+    min-width:0;
+    background:#fff;
+    border:1px solid #c9d1c6;
+    color:var(--ink);
+    border-radius:6px;
+    padding:9px;
+    font:inherit;
+    font-size:14px;
+}
+
+#purposeAsk { padding-bottom:16px; margin-bottom:16px; border-bottom:1px solid var(--line); }

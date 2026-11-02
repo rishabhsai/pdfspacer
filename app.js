@@ -1,3 +1,19 @@
+const PURPOSES = [
+    ['homework', 'Homework'],
+    ['past-paper', 'Past paper'],
+    ['slides', 'Lecture slides'],
+    ['reading', 'Reading notes'],
+    ['worksheet', 'Worksheet for my class'],
+    ['other', 'Something else']
+];
+
+const PURPOSE_STEPS = {
+    ask: ['purposeQuestion', 'purposeChips'],
+    wish: ['purposeMore', 'purposeThanks'],
+    done: ['purposeThanks']
+};
+const PURPOSE_THANKS = 'Thanks, that decides what gets built next.';
+
 class PDFAnswerSpacer {
     constructor() {
         this.storage = new SpacerStorage();
@@ -56,6 +72,14 @@ class PDFAnswerSpacer {
         bind('shareDoneBtn', () => this.$('sharePrompt').close());
         bind('feedbackCancelBtn', () => this.$('feedbackDialog').close());
         bind('feedbackSendBtn', () => this.sendFeedback());
+        this.$('purposeChips')?.replaceChildren(...PURPOSES.map(([value, label]) => {
+            const chip = document.createElement('button');
+            chip.type = 'button'; chip.className = 'chip'; chip.textContent = label; chip.setAttribute('aria-pressed', 'false');
+            chip.onclick = () => this.answerPurpose(value, chip);
+            return chip;
+        }));
+        const more = this.$('purposeMore');
+        if (more) more.onsubmit = event => { event.preventDefault(); this.sendWish(); };
         if (navigator.share && this.$('shareBtn')) this.$('shareBtn').hidden = false;
         document.querySelectorAll('[data-feedback]').forEach(link => link.onclick = event => { event.preventDefault(); link.closest('details')?.removeAttribute('open'); this.openFeedback(); });
         this.$('closePreviewBtn').onclick = () => this.$('previewDialog').close();
@@ -527,6 +551,37 @@ class PDFAnswerSpacer {
             if (error.name !== 'AbortError') this.status('Could not share. The link is pdfspacer.com', true);
         }
     }
+    /* Ask on the first export and every fifth one after that, only when the answer can actually be sent. */
+    askPurpose() {
+        const ask = this.$('purposeAsk');
+        if (!ask) return;
+        const exports = Number(localStorage.getItem('pdfSpacerExports') || 0) + 1;
+        localStorage.setItem('pdfSpacerExports', exports);
+        ask.hidden = !(window.SpacerAnalytics?.enabled && (exports === 1 || exports % 5 === 0));
+        if (ask.hidden) return;
+        this.purpose = null;
+        this.$('purposeChips').querySelectorAll('.chip').forEach(chip => chip.setAttribute('aria-pressed', 'false'));
+        this.$('purposeWish').value = '';
+        this.$('purposeThanks').textContent = PURPOSE_THANKS;
+        this.purposeStep('ask');
+    }
+    purposeStep(step) {
+        Object.values(PURPOSE_STEPS).flat().forEach(id => { this.$(id).hidden = !PURPOSE_STEPS[step].includes(id); });
+    }
+    answerPurpose(purpose, chip) {
+        this.purpose = purpose;
+        chip.setAttribute('aria-pressed', 'true');
+        this.track('export_purpose', { purpose });
+        setTimeout(() => { this.purposeStep('wish'); this.$('purposeWish').focus(); }, 250);
+    }
+    sendWish() {
+        const text = this.$('purposeWish').value.trim();
+        if (text) {
+            this.track('feedback', { type: 'wish', message: text, purpose: this.purpose, pages: this.geometry.length || undefined, browser: navigator.userAgent });
+            this.$('purposeThanks').textContent = 'Thanks, noted.';
+        }
+        this.purposeStep('done');
+    }
     openFeedback() {
         this.$('sharePrompt')?.close();
         this.$('feedbackDialog').showModal();
@@ -589,6 +644,7 @@ class PDFAnswerSpacer {
                 this.$('exportDialog').close();
                 this.status('PDF exported');
                 this.track('pdf_exported', { mode, credit, pages: this.geometry.length, spacers: Object.values(this.history.current).reduce((sum, list) => sum + list.length, 0) });
+                this.askPurpose();
                 this.$('sharePrompt')?.showModal();
             }
         } catch (error) { this.status(`Could not export PDF: ${error.message}`, true); }
