@@ -7,6 +7,13 @@ const PURPOSES = [
     ['other', 'Something else']
 ];
 
+const PURPOSE_STEPS = {
+    ask: ['purposeQuestion', 'purposeChips'],
+    wish: ['purposeMore', 'purposeThanks'],
+    done: ['purposeThanks']
+};
+const PURPOSE_THANKS = 'Thanks, that decides what gets built next.';
+
 class PDFAnswerSpacer {
     constructor() {
         this.storage = new SpacerStorage();
@@ -553,28 +560,27 @@ class PDFAnswerSpacer {
         ask.hidden = !(window.SpacerAnalytics?.enabled && (exports === 1 || exports % 5 === 0));
         if (ask.hidden) return;
         this.purpose = null;
-        this.$('purposeChips').hidden = false;
         this.$('purposeChips').querySelectorAll('.chip').forEach(chip => chip.setAttribute('aria-pressed', 'false'));
-        this.$('purposeMore').hidden = true;
-        this.$('purposeThanks').hidden = true;
         this.$('purposeWish').value = '';
+        this.$('purposeThanks').textContent = PURPOSE_THANKS;
+        this.purposeStep('ask');
+    }
+    purposeStep(step) {
+        Object.values(PURPOSE_STEPS).flat().forEach(id => { this.$(id).hidden = !PURPOSE_STEPS[step].includes(id); });
     }
     answerPurpose(purpose, chip) {
         this.purpose = purpose;
         chip.setAttribute('aria-pressed', 'true');
         this.track('export_purpose', { purpose });
-        setTimeout(() => {
-            this.$('purposeChips').hidden = true;
-            this.$('purposeMore').hidden = false;
-            this.$('purposeThanks').hidden = false;
-            this.$('purposeWish').focus();
-        }, 250);
+        setTimeout(() => { this.purposeStep('wish'); this.$('purposeWish').focus(); }, 250);
     }
     sendWish() {
         const text = this.$('purposeWish').value.trim();
-        if (text) this.track('feedback', { type: 'wish', message: text, purpose: this.purpose, pages: this.geometry.length || undefined, browser: navigator.userAgent });
-        this.$('purposeMore').hidden = true;
-        this.$('purposeThanks').textContent = text ? 'Thanks, noted.' : 'Thanks, that decides what gets built next.';
+        if (text) {
+            this.track('feedback', { type: 'wish', message: text, purpose: this.purpose, pages: this.geometry.length || undefined, browser: navigator.userAgent });
+            this.$('purposeThanks').textContent = 'Thanks, noted.';
+        }
+        this.purposeStep('done');
     }
     openFeedback() {
         this.$('sharePrompt')?.close();
