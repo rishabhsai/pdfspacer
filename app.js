@@ -7,10 +7,12 @@ const PURPOSES = [
     ['other', 'Something else']
 ];
 
+/* The share buttons stay out of sight until the question is answered or skipped, so answering is the quickest way on. */
 const PURPOSE_STEPS = {
-    ask: ['purposeQuestion', 'purposeChips'],
-    wish: ['purposeMore', 'purposeThanks'],
-    done: ['purposeThanks']
+    ask: ['purposeQuestion', 'purposeChips', 'purposeSkip'],
+    wish: ['purposeMore', 'purposeThanks', 'shareSection'],
+    done: ['purposeThanks', 'shareSection'],
+    skipped: ['shareSection']
 };
 const PURPOSE_THANKS = 'Thanks, that decides what gets built next.';
 
@@ -78,6 +80,7 @@ class PDFAnswerSpacer {
             chip.onclick = () => this.answerPurpose(value, chip);
             return chip;
         }));
+        bind('purposeSkipBtn', () => { this.track('export_purpose', { purpose: 'skipped' }); this.purposeStep('skipped'); });
         const more = this.$('purposeMore');
         if (more) more.onsubmit = event => { event.preventDefault(); this.sendWish(); };
         if (navigator.share && this.$('shareBtn')) this.$('shareBtn').hidden = false;
@@ -551,14 +554,14 @@ class PDFAnswerSpacer {
             if (error.name !== 'AbortError') this.status('Could not share. The link is pdfspacer.com', true);
         }
     }
-    /* Ask on the first export and every fifth one after that, only when the answer can actually be sent. */
+    /* Ask on the first export and once more on the tenth, only when the answer can actually be sent. */
     askPurpose() {
         const ask = this.$('purposeAsk');
         if (!ask) return;
         const exports = Number(localStorage.getItem('pdfSpacerExports') || 0) + 1;
         localStorage.setItem('pdfSpacerExports', exports);
-        ask.hidden = !(window.SpacerAnalytics?.enabled && (exports === 1 || exports % 5 === 0));
-        if (ask.hidden) return;
+        ask.hidden = !(window.SpacerAnalytics?.enabled && (exports === 1 || exports === 10));
+        if (ask.hidden) { this.$('shareSection').hidden = false; return; }
         this.purpose = null;
         this.$('purposeChips').querySelectorAll('.chip').forEach(chip => chip.setAttribute('aria-pressed', 'false'));
         this.$('purposeWish').value = '';
