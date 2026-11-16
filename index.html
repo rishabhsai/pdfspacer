@@ -35,7 +35,7 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://unpkg.com" crossorigin>
     <link rel="preload" as="image" imagesrcset="/images/before-after-720.webp 720w, /images/before-after-1100.webp 1100w, /images/before-after.webp 1496w" imagesizes="(max-width: 650px) calc(100vw - 32px), 880px" fetchpriority="high">
-    <link rel="stylesheet" href="styles.css?v=20261104">
+    <link rel="stylesheet" href="styles.css?v=20261117">
 </head>
 
 <body>
@@ -101,7 +101,15 @@
                     </div>
                 </section>
                 <div id="pdfViewer" class="pdf-viewer placing" hidden></div>
-            </div><aside class="sidebar"><h2>Writing space</h2><div id="spacerProperties"><p class="muted">Open a PDF to add and edit writing space.</p></div><p class="sidebar-note">Measurements show the size on exported A4 paper. Use Export → Preview to check the final pages. Missing something? <a href="#" data-feedback>Send feedback</a>.</p></aside></div>
+            </div><aside class="sidebar">
+                <div id="slidesHint" class="sidebar-hint" hidden>
+                    <p>Looks like slides. Want note lines under each one?</p>
+                    <div class="sidebar-hint-actions">
+                        <button id="slidesHintBtn" class="btn primary">Add note lines</button>
+                        <button id="slidesHintDismissBtn" class="btn">Not now</button>
+                    </div>
+                </div>
+                <h2>Writing space</h2><div id="spacerProperties"><p class="muted">Open a PDF to add and edit writing space.</p></div><p class="sidebar-note">Measurements show the size on exported A4 paper. Use Export → Preview to check the final pages. Missing something? <a href="#" data-feedback>Send feedback</a>.</p></aside></div>
     </main>
     <div id="status" role="status" aria-live="polite"></div>
     <dialog id="exportDialog"><h2>Export PDF</h2><p>Choose a page layout.</p><label class="export-option"><input type="radio" name="exportMode" value="paginated" checked><span><strong>Paginated A4</strong><small>Continuous content across printable A4 pages.</small></span></label><label class="export-option"><input type="radio" name="exportMode" value="long"><span><strong>Single long page</strong><small>One continuous sheet for digital writing and scrolling.</small></span></label><p class="muted">Original text and graphics stay sharp. Forms, annotations and clickable links are not included.</p><label class="export-check"><input type="checkbox" id="creditToggle" checked><span>Add a small <em>Made with pdfspacer.com</em> line in the bottom margin of the last page. It is how most people find the tool.</span></label><div class="dialog-actions"><button class="btn" id="exportCancelBtn">Cancel</button><button class="btn" id="previewBtn">Preview</button><button class="btn primary" id="exportConfirmBtn">Download PDF</button></div></dialog>
@@ -155,6 +163,6 @@
       ]
     }
     </script>
-    <script defer src="app.js?v=20261104"></script>
+    <script defer src="app.js?v=20261117"></script>
 </body>
 </html>

@@ -282,6 +282,32 @@ p { line-height: 1.6; }
     margin-top:25px;
 }
 
+.sidebar-hint {
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:12px;
+    margin-bottom:20px;
+    background:var(--paper);
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.6;
+}
+
+.sidebar-hint p {
+    margin:0 0 10px;
+}
+
+.sidebar-hint-actions {
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+}
+
+.sidebar-hint .btn {
+    padding:8px 10px;
+    font-size:12px;
+}
+
 .property-actions {
     display:flex;
     gap:8px;
