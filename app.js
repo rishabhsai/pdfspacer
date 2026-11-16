@@ -69,6 +69,20 @@ class PDFAnswerSpacer {
         this.$('exportConfirmBtn').onclick = () => this.exportPDF();
         this.$('previewBtn').onclick = () => this.exportPDF(true);
         const bind = (id, handler) => { const element = this.$(id); if (element) element.onclick = handler; };
+        bind('slidesHintBtn', () => {
+            document.querySelector('input[name="everyPageSize"][value="fill"]').checked = true;
+            this.$('everyPageStyle').value = 'ruled';
+            this.showSlidesHint(false);
+            this.$('everyPageBtn').focus();
+            this.$('everyPageDialog').showModal();
+            this.track('slides_hint', { action: 'accepted' });
+        });
+        bind('slidesHintDismissBtn', () => {
+            this.showSlidesHint(false);
+            localStorage.setItem('pdfSpacerSlidesHintDismissed', '1');
+            this.$('everyPageBtn').focus();
+            this.track('slides_hint', { action: 'dismissed' });
+        });
         bind('copyLinkBtn', () => this.share('copy'));
         bind('shareBtn', () => this.share('native'));
         bind('shareDoneBtn', () => this.$('sharePrompt').close());
@@ -112,7 +126,14 @@ class PDFAnswerSpacer {
         this.$('status').textContent = message;
         this.$('status').classList.toggle('error', error);
     }
+    showSlidesHint(visible) {
+        const hint = this.$('slidesHint');
+        if (!hint) return;
+        hint.hidden = !visible || localStorage.getItem('pdfSpacerSlidesHintDismissed') !== null;
+        if (!hint.hidden) this.track('slides_hint', { action: 'shown' });
+    }
     async loadPDF(file, saved = null, restoreGeneration = null) {
+        this.showSlidesHint(false);
         const generation = restoreGeneration ?? ++this.generation;
         this.status('Opening PDF…');
         let candidate;
@@ -152,6 +173,7 @@ class PDFAnswerSpacer {
             this.updateProperties();
             this.updateHistory();
             this.$('addSpaceBtn').focus();
+            this.showSlidesHint(geometry.filter(page => page.width > page.height).length > geometry.length / 2);
             this.track('pdf_opened', { pages: geometry.length, sample: file instanceof URL, restored: Boolean(saved) });
             if (previous) previous.destroy();
             await this.persist({ name: this.pdfName, type: 'application/pdf', data: bytes });
@@ -187,6 +209,7 @@ class PDFAnswerSpacer {
         try {
             const valid = SpacerLayout.validate(state, this.geometry);
             if (!this.history.commit(valid)) return;
+            if (Object.values(valid).some(spacers => spacers.length)) this.showSlidesHint(false);
             this.persist();
             this.renderDocument();
             this.updateProperties();
@@ -532,6 +555,7 @@ class PDFAnswerSpacer {
             this.updateHistory();
             this.updateProperties();
             document.body.classList.remove('editing');
+            this.showSlidesHint(false);
             this.saving = false; this.unsaved = false;
             this.status('Session removed from this device');
             document.querySelector('[data-choose-pdf]').focus();
