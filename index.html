@@ -35,7 +35,7 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://unpkg.com" crossorigin>
     <link rel="preload" as="image" imagesrcset="/images/before-after-720.webp 720w, /images/before-after-1100.webp 1100w, /images/before-after.webp 1496w" imagesizes="(max-width: 650px) calc(100vw - 32px), 880px" fetchpriority="high">
-    <link rel="stylesheet" href="styles.css?v=20261117">
+    <link rel="stylesheet" href="styles.css?v=20261120">
 </head>
 
 <body>
@@ -43,7 +43,7 @@
     <input type="file" id="projectInput" accept=".json,application/json" hidden>
     <main id="editor" aria-label="PDF spacer editor">
         <header class="editor-header"><a class="brand" href="/" aria-label="PDFSpacer home">PDFSpacer</a><span id="documentName">Add writing space to your PDF</span><button class="btn" data-choose-pdf>Open PDF</button><details class="project-menu"><summary class="btn">Project</summary><div><button id="saveProjectBtn" data-requires-pdf disabled>Download layout</button><button id="loadProjectBtn" data-requires-pdf disabled>Load layout</button><button id="clearProjectBtn" data-requires-pdf disabled>Clear all spaces</button><button id="clearSessionBtn" data-requires-pdf disabled>Clear session</button><a href="/guide" target="_blank" rel="noopener">Help & shortcuts</a><a href="#" data-feedback>Feedback</a></div></details><button class="btn primary" id="exportPdfBtn" data-requires-pdf disabled>Export PDF</button></header>
-        <div class="editor-toolbar"><div class="tool-group"><button class="btn" id="addSpaceBtn" data-requires-pdf disabled aria-pressed="true">+ Add space</button><button class="btn" id="selectBtn" data-requires-pdf disabled aria-pressed="false">Select</button><button class="btn" id="everyPageBtn" data-requires-pdf disabled title="Add the same writing space or a blank page after every page">+ Every page</button></div><div class="tool-group"><button class="btn" id="undoBtn" disabled title="Undo (Ctrl/Cmd+Z)">↶ <span>Undo</span></button><button class="btn" id="redoBtn" disabled title="Redo (Ctrl/Cmd+Shift+Z)">↷ <span>Redo</span></button></div><div class="zoom-controls"><button class="btn" id="zoomOutBtn" data-requires-pdf disabled aria-label="Zoom out">−</button><span id="zoomLevel">100%</span><button class="btn" id="zoomInBtn" data-requires-pdf disabled aria-label="Zoom in">+</button><button class="btn" id="fitWidthBtn" data-requires-pdf disabled>Fit</button></div><label class="breaks-label"><input type="checkbox" id="showBreaksToggle" data-requires-pdf disabled checked> A4 breaks</label></div>
+        <div class="editor-toolbar"><div class="tool-group"><button class="btn" id="addSpaceBtn" data-requires-pdf disabled aria-pressed="true">+ Add space</button><button class="btn" id="selectBtn" data-requires-pdf disabled aria-pressed="false">Select</button><button class="btn" id="cutBtn" data-requires-pdf disabled aria-pressed="false" title="Drag over part of a page to remove it">✂ <span>Cut</span></button><button class="btn" id="everyPageBtn" data-requires-pdf disabled title="Add the same writing space or a blank page after every page">+ Every page</button></div><div class="tool-group"><button class="btn" id="undoBtn" disabled title="Undo (Ctrl/Cmd+Z)">↶ <span>Undo</span></button><button class="btn" id="redoBtn" disabled title="Redo (Ctrl/Cmd+Shift+Z)">↷ <span>Redo</span></button></div><div class="zoom-controls"><button class="btn" id="zoomOutBtn" data-requires-pdf disabled aria-label="Zoom out">−</button><span id="zoomLevel">100%</span><button class="btn" id="zoomInBtn" data-requires-pdf disabled aria-label="Zoom in">+</button><button class="btn" id="fitWidthBtn" data-requires-pdf disabled>Fit</button></div><label class="breaks-label"><input type="checkbox" id="showBreaksToggle" data-requires-pdf disabled checked> A4 breaks</label></div>
         <div class="editor-workspace"><div id="viewerContainer" class="viewer-container">
                 <section id="landing" class="empty-workspace" aria-labelledby="upload-heading">
                     <div class="upload-panel">
@@ -119,9 +119,9 @@
     <dialog id="previewDialog"><div class="preview-heading"><h2>Export preview</h2><button class="btn" id="closePreviewBtn">Close preview</button></div><div id="previewPages"></div></dialog>
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script defer src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-    <script defer src="layout.js?v=20261026"></script>
+    <script defer src="layout.js?v=20261120"></script>
     <script defer src="storage.js?v=20260919"></script>
-    <script defer src="export.js?v=20261030"></script>
+    <script defer src="export.js?v=20261120"></script>
     <script defer src="analytics.js?v=20261030d"></script>
     <script type="application/ld+json">
     {
@@ -163,6 +163,6 @@
       ]
     }
     </script>
-    <script defer src="app.js?v=20261117"></script>
+    <script defer src="app.js?v=20261120"></script>
 </body>
 </html>

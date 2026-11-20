@@ -7,7 +7,7 @@
 - `guide.html` plus `add-answer-space-to-past-papers.html`, `add-lines-to-pdf-worksheet.html`, `add-space-to-pdf-for-notes.html`, `pdf-homework-spacer.html`, `insert-blank-page-after-every-page-pdf.html`, `add-lines-to-pdf-slides-for-notes.html` — static SEO/guide pages sharing `pages.css`; served at clean URLs (no `.html`) by `vercel.json`. Add new pages to `sitemap.xml` with a `lastmod`.
 - `it.html`, `es.html`, `it/spazio-pdf-appunti.html`, `es/espacio-pdf-apuntes.html` — Italian and Spanish landing and notes pages, linked with `hreflang` from the English homepage and notes page. The editor itself stays in English; these pages describe it and link to `/`.
 - `privacy.html`, `terms.html`: privacy policy and terms of use for the site and the ChatGPT plugin, served at `/privacy` and `/terms`; linked from the homepage footer and listed in `sitemap.xml`.
-- `analytics.js` — cookieless PostHog wrapper loaded by every page; inert until `KEY` is set. `SpacerAnalytics.track(event, props)` is the only entry point; `app.js` calls it via `this.track`. Events: `pdf_opened`, `spacer_added`, `every_page_added`, `slides_hint`, `pdf_exported`, `share_clicked`, `export_purpose`, `feedback`.
+- `analytics.js` — cookieless PostHog wrapper loaded by every page; inert until `KEY` is set. `SpacerAnalytics.track(event, props)` is the only entry point; `app.js` calls it via `this.track`. Events: `pdf_opened`, `spacer_added`, `section_cut`, `every_page_added`, `slides_hint`, `pdf_exported`, `share_clicked`, `export_purpose`, `feedback`.
 - `images/` — real product screenshots (WebP) used by the landing and guide pages.
 - `demo.html` — legacy redirect to the guide.
 - `README.md` — usage overview and notes.
@@ -35,6 +35,7 @@ Export
 
 Viewer/Rendering architecture
 - Continuous scroll viewer: renders all pages stacked; `renderCurrentPage(options)` tokenizes to finalize only latest render, preserves scroll, and skips loader during interactive updates.
+- Cut tool: drag a full-width band to hide it and close the gap; the per-page list stores `{ id, y, height, style: 'cut' }` in source units. A zero-height cut mark selects the band for Restore. Exports crop the original vector content, so hidden text stays in the file and can still be extracted; this is not redaction.
 - Spacer interactions: click‑vs‑drag threshold (5px) avoids accidental drags; drag/resize coalesced via `requestAnimationFrame` and committed on mouseup.
 - Page break preview: dashed overlays from A4 aspect; toggle in header.
 - Placement guide: currently not exposed in UI.
@@ -45,7 +46,7 @@ Viewer/Rendering architecture
 - Export pipelines: PDF.js rendering onto canvases; optional continuous-flow pagination (enabled by default in Paginated mode).
 
 ## Testing Guidelines
-- No formal test suite yet. Favor manual flows and small, testable helpers.
+- Run layout regression checks with `node --test tests/layout.test.cjs`; verify editor gestures and PDF exports in a browser.
 - If introducing automated tests, place them under `tests/` and document how to run them in the PR. Keep tooling lightweight and optional.
 
 ## Commit & Pull Request Guidelines

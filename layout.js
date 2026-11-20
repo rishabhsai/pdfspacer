@@ -4,7 +4,7 @@ const SpacerLayout = (() => {
     const HEIGHT = 841.88976378;
     // PDF.js rounds page sizes, so an A4 source can overrun a sheet by a few microns; slivers below this are dropped rather than spilling onto a new sheet.
     const EPSILON = 0.05;
-    const styles = ['plain', 'ruled', 'squared', 'dot-grid'];
+    const styles = ['plain', 'ruled', 'squared', 'dot-grid', 'cut'];
     const number = (value, min, max, name) => {
         if (typeof value !== 'number' || !Number.isFinite(value) || value < min || value > max) {
             throw new Error(`${name} must be between ${min} and ${max}.`);
@@ -27,7 +27,7 @@ const SpacerLayout = (() => {
                 return {
                     id: item.id,
                     y: number(item.y, 0, geometry[page - 1].height, 'Position'),
-                    height: number(item.height, 1, 10000, 'Height'),
+                    height: number(item.height, 1, item.style === 'cut' ? geometry[page - 1].height - item.y : 10000, 'Height'),
                     style: item.style,
                     ruleSpacing: number(item.ruleSpacing ?? 20, 2, 100, 'Line spacing'),
                     dotPitch: number(item.dotPitch ?? 10, 2, 100, 'Dot spacing'),
@@ -48,9 +48,14 @@ const SpacerLayout = (() => {
                 items.push({ type: 'slice', sourceY, top, height, factor });
                 top += height;
             }
-            items.push({ type: 'spacer', spacer, top, height: spacer.height * factor, factor });
-            top += spacer.height * factor;
-            sourceY = spacer.y;
+            if (spacer.style === 'cut') {
+                items.push({ type: 'cut', spacer, top, height: 0, factor });
+                sourceY = Math.max(sourceY, spacer.y + spacer.height);
+            } else {
+                items.push({ type: 'spacer', spacer, top, height: spacer.height * factor, factor });
+                top += spacer.height * factor;
+                sourceY = Math.max(sourceY, spacer.y);
+            }
         }
         if (sourceY < geometry.height) {
             items.push({ type: 'slice', sourceY, top, height: (geometry.height - sourceY) * factor, factor });
@@ -94,6 +99,7 @@ const SpacerLayout = (() => {
     function sourceAt(layout, top) {
         const point = Math.max(0, Math.min(top, layout.height));
         for (const item of layout.items) {
+            if (item.type === 'cut') continue;
             if (point <= item.top + item.height) {
                 return item.type === 'spacer' ? item.spacer.y : item.sourceY + (point - item.top) / item.factor;
             }

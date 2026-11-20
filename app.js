@@ -69,6 +69,7 @@ class PDFAnswerSpacer {
         this.$('exportConfirmBtn').onclick = () => this.exportPDF();
         this.$('previewBtn').onclick = () => this.exportPDF(true);
         const bind = (id, handler) => { const element = this.$(id); if (element) element.onclick = handler; };
+        bind('cutBtn', () => this.setTool('cut'));
         bind('slidesHintBtn', () => {
             document.querySelector('input[name="everyPageSize"][value="fill"]').checked = true;
             this.$('everyPageStyle').value = 'ruled';
@@ -235,7 +236,10 @@ class PDFAnswerSpacer {
         this.tool = tool;
         this.$('addSpaceBtn').setAttribute('aria-pressed', tool === 'add');
         this.$('selectBtn').setAttribute('aria-pressed', tool === 'select');
+        this.$('cutBtn')?.setAttribute('aria-pressed', tool === 'cut');
         this.viewer.classList.toggle('placing', tool === 'add');
+        this.viewer.classList.toggle('cutting', tool === 'cut');
+        this.viewer.querySelectorAll('.insertion-guide').forEach(line => line.remove());
     }
     setZoom(scale, fitted = false) {
         this.scale = Math.max(0.1, Math.min(3, scale));
@@ -267,6 +271,7 @@ class PDFAnswerSpacer {
                 element.dataset.pageNumber = pageLayout.pageNumber;
                 element.setAttribute('aria-label', `Source page ${pageLayout.pageNumber}`);
                 element.onclick = event => this.pageClick(event, element);
+                element.onpointerdown = event => this.beginCut(event, element);
                 element.onpointermove = event => this.showGuide(event, element);
                 element.onpointerleave = () => element.querySelector('.insertion-guide')?.remove();
                 this.viewer.append(element);
@@ -324,6 +329,22 @@ class PDFAnswerSpacer {
                 canvas.style.cssText = `top:${item.top * this.scale}px;width:100%;height:${item.height * this.scale}px`;
                 canvas.getContext('2d').drawImage(source, 0, item.sourceY * item.factor * ratio, source.width, item.height * ratio, 0, 0, canvas.width, canvas.height);
                 content.append(canvas);
+            } else if (item.type === 'cut') {
+                const mark = document.createElement('div');
+                const mm = Math.round(item.spacer.height * item.factor * 25.4 / 72);
+                mark.className = 'cut-mark';
+                mark.dataset.spacerId = item.spacer.id;
+                mark.tabIndex = 0;
+                mark.setAttribute('role', 'button');
+                mark.setAttribute('aria-label', `Removed ${mm} millimetres. Select to restore.`);
+                mark.style.top = `${item.top * this.scale}px`;
+                const label = document.createElement('span');
+                label.className = 'spacer-label';
+                label.textContent = `Removed ${mm} mm`;
+                mark.append(label);
+                mark.onclick = event => { event.stopPropagation(); this.select(item.spacer.id, pageNumber); };
+                mark.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); this.select(item.spacer.id, pageNumber); } };
+                content.append(mark);
             } else {
                 const element = document.createElement('div');
                 element.className = `spacer spacer-${item.spacer.style}`;
@@ -369,13 +390,13 @@ class PDFAnswerSpacer {
         }
     }
     showGuide(event, element) {
-        if (this.gesture || this.tool !== 'add' || event.target.closest('.spacer') || event.pointerType === 'touch') { element.querySelector('.insertion-guide')?.remove(); return; }
+        if (this.gesture || this.tool !== 'add' || event.target.closest('.spacer, .cut-mark') || event.pointerType === 'touch') { element.querySelector('.insertion-guide')?.remove(); return; }
         let line = element.querySelector('.insertion-guide');
         if (!line) { line = document.createElement('div'); line.className = 'insertion-guide'; line.textContent = 'Insert writing space here'; element.append(line); }
         line.style.top = `${event.clientY - element.getBoundingClientRect().top}px`;
     }
     pageClick(event, element) {
-        if (this.tool !== 'add' || event.target.closest('.spacer')) return;
+        if (this.tool !== 'add' || event.target.closest('.spacer, .cut-mark')) return;
         const pageNumber = Number(element.dataset.pageNumber);
         const layout = this.layout.pages[pageNumber - 1];
         const y = SpacerLayout.sourceAt(layout, (event.clientY - element.getBoundingClientRect().top) / this.scale);
@@ -385,7 +406,7 @@ class PDFAnswerSpacer {
         this.track('spacer_added', { style: spacer.style });
     }
     select(id, pageNumber) { this.selected = { id, pageNumber }; this.highlight(); this.updateProperties(); }
-    highlight() { this.viewer.querySelectorAll('.spacer').forEach(element => element.classList.toggle('selected', element.dataset.spacerId === this.selected?.id)); }
+    highlight() { this.viewer.querySelectorAll('.spacer, .cut-mark').forEach(element => element.classList.toggle('selected', element.dataset.spacerId === this.selected?.id)); }
     selectedSpacer() { return this.selected && this.history.current[this.selected.pageNumber]?.find(item => item.id === this.selected.id); }
     edit(patch) {
         if (!this.selectedSpacer()) return;
@@ -393,7 +414,7 @@ class PDFAnswerSpacer {
         const state = { ...this.history.current, [pageNumber]: this.history.current[pageNumber].map(item => item.id === id ? { ...item, ...patch } : item) };
         this.commit(state);
         const spacer = this.selectedSpacer();
-        this.preset = { style: spacer.style, ruleSpacing: spacer.ruleSpacing, dotPitch: spacer.dotPitch, gridSize: spacer.gridSize };
+        if (spacer.style !== 'cut') this.preset = { style: spacer.style, ruleSpacing: spacer.ruleSpacing, dotPitch: spacer.dotPitch, gridSize: spacer.gridSize };
     }
     remove() {
         if (!this.selectedSpacer()) return;
@@ -403,7 +424,7 @@ class PDFAnswerSpacer {
     }
     duplicate() {
         const spacer = this.selectedSpacer();
-        if (!spacer) return;
+        if (!spacer || spacer.style === 'cut') return;
         const { pageNumber } = this.selected;
         const copy = { ...spacer, id: crypto.randomUUID(), y: Math.min(this.geometry[pageNumber - 1].height, spacer.y + 20) };
         this.selected = { pageNumber, id: copy.id };
@@ -431,12 +452,38 @@ class PDFAnswerSpacer {
         if (!spacer) {
             const hint = document.createElement('p');
             hint.className = 'muted';
-            hint.textContent = this.pdfDocument ? 'Choose Add space, then click in a clear gap below a question. Select a space to adjust it.' : 'Open a PDF to add and edit writing space.';
+            hint.textContent = this.pdfDocument ? 'Choose Add space, then click in a clear gap below a question. Use Cut to drag over part of a page and hide it. Select a space to adjust it.' : 'Open a PDF to add and edit writing space.';
             panel.append(hint);
             return;
         }
         const factor = SpacerLayout.WIDTH / this.geometry[this.selected.pageNumber - 1].width;
         const mm = factor * 25.4 / 72;
+        const field = (label, key, max, multiplier = mm, min = key === 'y' ? 0 : (key === 'height' ? 1 : 2) * multiplier) => {
+            const wrapper = document.createElement('label');
+            wrapper.textContent = label;
+            const input = document.createElement('input');
+            input.id = `spacer-${key}`;
+            input.type = 'number'; input.step = 'any'; input.min = min; input.max = max * multiplier;
+            input.value = Number((spacer[key] * multiplier).toFixed(2));
+            input.onchange = () => {
+                if (!input.checkValidity() || !Number.isFinite(input.valueAsNumber)) { input.reportValidity(); input.value = Number((spacer[key] * multiplier).toFixed(2)); return; }
+                this.edit({ [key]: input.valueAsNumber / multiplier });
+            };
+            wrapper.append(input); panel.append(wrapper);
+        };
+        if (spacer.style === 'cut') {
+            const hint = document.createElement('p');
+            hint.className = 'muted';
+            hint.textContent = 'Removed part of the page. Hidden in the export; the content stays in the file.';
+            panel.append(hint);
+            const pageHeight = this.geometry[this.selected.pageNumber - 1].height;
+            field('Removed height (mm on A4)', 'height', pageHeight - spacer.y, mm, Math.max(1, mm));
+            field('Position (mm from source top)', 'y', pageHeight - spacer.height);
+            const restore = document.createElement('button');
+            restore.className = 'btn danger'; restore.textContent = 'Restore'; restore.onclick = () => this.remove();
+            panel.append(restore);
+            return;
+        }
         const styleLabel = document.createElement('label');
         styleLabel.textContent = 'Paper style';
         const select = document.createElement('select');
@@ -447,19 +494,6 @@ class PDFAnswerSpacer {
         select.onchange = () => this.edit({ style: select.value });
         styleLabel.append(select);
         panel.append(styleLabel);
-        const field = (label, key, max, multiplier = mm) => {
-            const wrapper = document.createElement('label');
-            wrapper.textContent = label;
-            const input = document.createElement('input');
-            input.id = `spacer-${key}`;
-            input.type = 'number'; input.step = 'any'; input.min = key === 'y' ? 0 : (key === 'height' ? 1 : 2) * multiplier; input.max = max * multiplier;
-            input.value = Number((spacer[key] * multiplier).toFixed(2));
-            input.onchange = () => {
-                if (!input.checkValidity() || !Number.isFinite(input.valueAsNumber)) { input.reportValidity(); input.value = Number((spacer[key] * multiplier).toFixed(2)); return; }
-                this.edit({ [key]: input.valueAsNumber / multiplier });
-            };
-            wrapper.append(input); panel.append(wrapper);
-        };
         field('Height (mm on A4)', 'height', 10000);
         field('Insertion position (mm from source top)', 'y', this.geometry[this.selected.pageNumber - 1].height);
         if (spacer.style !== 'plain') field('Pattern spacing (mm)', spacer.style === 'ruled' ? 'ruleSpacing' : spacer.style === 'dot-grid' ? 'dotPitch' : 'gridSize', 100);
@@ -467,6 +501,62 @@ class PDFAnswerSpacer {
         const duplicate = document.createElement('button'); duplicate.className = 'btn'; duplicate.textContent = 'Duplicate'; duplicate.onclick = () => this.duplicate();
         const remove = document.createElement('button'); remove.className = 'btn danger'; remove.textContent = 'Delete'; remove.onclick = () => this.remove();
         actions.append(duplicate, remove); panel.append(actions);
+    }
+    beginCut(event, element) {
+        if (this.tool !== 'cut' || event.button !== 0 || this.gesture || event.target.closest('.spacer, .cut-mark')) return;
+        event.preventDefault();
+        const pageNumber = Number(element.dataset.pageNumber);
+        const layout = this.layout.pages[pageNumber - 1];
+        const scale = this.scale;
+        const point = pointer => Math.max(0, Math.min(layout.height, (pointer.clientY - element.getBoundingClientRect().top) / scale));
+        const start = point(event);
+        let end = start;
+        let active = false;
+        const band = document.createElement('div');
+        band.className = 'cut-band';
+        const label = document.createElement('span');
+        label.className = 'spacer-label';
+        band.append(label);
+        const bounds = () => {
+            const first = SpacerLayout.sourceAt(layout, start);
+            const last = SpacerLayout.sourceAt(layout, end);
+            return { y: Math.min(first, last), height: Math.abs(last - first) };
+        };
+        this.gesture = true;
+        element.setPointerCapture(event.pointerId);
+        const move = pointer => {
+            if (pointer.pointerId !== event.pointerId) return;
+            if (!active && Math.abs(pointer.clientY - event.clientY) < 5) return;
+            active = true;
+            end = point(pointer);
+            band.style.top = `${Math.min(start, end) * scale}px`;
+            band.style.height = `${Math.abs(end - start) * scale}px`;
+            label.textContent = `Remove ${Math.round(bounds().height * layout.factor * 25.4 / 72)} mm`;
+            if (!band.isConnected) element.append(band);
+        };
+        const finish = pointer => {
+            if (pointer.pointerId !== event.pointerId) return;
+            if (pointer.type === 'pointerup') move(pointer);
+            element.removeEventListener('pointermove', move);
+            element.removeEventListener('pointerup', finish);
+            element.removeEventListener('pointercancel', finish);
+            element.removeEventListener('lostpointercapture', finish);
+            if (element.hasPointerCapture(event.pointerId)) element.releasePointerCapture(event.pointerId);
+            band.remove();
+            this.gesture = false;
+            if (pointer.type !== 'pointerup') return;
+            if (!active) { this.status('Drag over the part of the page you want to remove'); return; }
+            const { y, height } = bounds();
+            if (height < 1 || height * layout.factor < 72 / 25.4) return;
+            const cut = { id: crypto.randomUUID(), y, height, style: 'cut' };
+            this.selected = { id: cut.id, pageNumber };
+            this.commit({ ...this.history.current, [pageNumber]: [...(this.history.current[pageNumber] || []), cut] });
+            this.track('section_cut', { mm: Math.round(height * layout.factor * 25.4 / 72) });
+        };
+        element.addEventListener('pointermove', move);
+        element.addEventListener('pointerup', finish);
+        element.addEventListener('pointercancel', finish);
+        element.addEventListener('lostpointercapture', finish);
     }
     beginGesture(event, element, pageNumber, item) {
         if (event.button !== 0) return;
@@ -517,7 +607,7 @@ class PDFAnswerSpacer {
         if (spacer && ['ArrowUp', 'ArrowDown'].includes(event.key)) {
             event.preventDefault();
             const delta = (event.key === 'ArrowUp' ? -1 : 1) * (event.shiftKey ? 10 : 1);
-            this.edit({ y: Math.max(0, Math.min(this.geometry[this.selected.pageNumber - 1].height, spacer.y + delta)) });
+            this.edit({ y: Math.max(0, Math.min(this.geometry[this.selected.pageNumber - 1].height - (spacer.style === 'cut' ? spacer.height : 0), spacer.y + delta)) });
         }
     }
     async loadProject(file) {
@@ -670,7 +760,8 @@ class PDFAnswerSpacer {
                 this.download(data, `${filename.replace(/\.pdf$/i, '')}-spaced.pdf`);
                 this.$('exportDialog').close();
                 this.status('PDF exported');
-                this.track('pdf_exported', { mode, credit, pages: this.geometry.length, spacers: Object.values(this.history.current).reduce((sum, list) => sum + list.length, 0) });
+                const entries = Object.values(this.history.current).flat();
+                this.track('pdf_exported', { mode, credit, pages: this.geometry.length, spacers: entries.filter(item => item.style !== 'cut').length, cuts: entries.filter(item => item.style === 'cut').length });
                 this.askPurpose();
                 this.$('sharePrompt')?.showModal();
             }

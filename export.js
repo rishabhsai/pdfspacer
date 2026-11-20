@@ -55,6 +55,7 @@ const SpacerExport = (() => {
                     pattern(page, item, layout.height, lib);
                     continue;
                 }
+                if (item.type !== 'slice') continue;
                 const geometryPage = geometry[item.pageNumber - 1];
                 const sourcePage = source.getPage(item.pageNumber - 1);
                 // A PDF page may be intentionally empty, with no content stream to embed.
