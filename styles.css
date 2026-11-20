@@ -49,7 +49,7 @@ button {
     color:inherit;
 }
 
-button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,.spacer:focus-visible {
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,.spacer:focus-visible,.cut-mark:focus-visible {
     outline:3px solid #d4991a;
     outline-offset:4px;
 }
@@ -219,7 +219,7 @@ p { line-height: 1.6; }
     flex:none;
     background:#fff;
     box-shadow:0 3px 15px #2734441a;
-    overflow:hidden;
+    overflow:visible;
 }
 
 .content-slice {
@@ -230,6 +230,52 @@ p { line-height: 1.6; }
 
 .placing .pdf-page {
     cursor:crosshair;
+}
+
+.cutting .pdf-page {
+    cursor:row-resize;
+    touch-action:none;
+}
+
+.cut-band {
+    position:absolute;
+    left:0;
+    width:100%;
+    background:rgba(161,55,44,.18);
+    border-block:1px dashed #a1372c;
+    pointer-events:none;
+    z-index:7;
+}
+
+.cut-mark {
+    position:absolute;
+    left:0;
+    width:100%;
+    height:0;
+    cursor:pointer;
+    z-index:6;
+}
+
+.cut-mark::before {
+    content:'';
+    position:absolute;
+    inset:-5px 0 auto;
+    height:10px;
+    background:repeating-linear-gradient(to right,#a1372c 0 6px,transparent 6px 10px) center / 100% 2px no-repeat;
+}
+
+.cut-mark.selected {
+    outline:2px solid #a1372c;
+    outline-offset:3px;
+}
+
+.cut-mark .spacer-label,.cut-band .spacer-label {
+    color:#a1372c;
+    background:#fff0ed;
+}
+
+.cut-mark .spacer-label {
+    pointer-events:auto;
 }
 
 .sidebar {
@@ -572,7 +618,7 @@ body:not(.editing) .sidebar-note { display:none; }
     body:not(.editing) .sidebar { display:none; }
     .sidebar h2 { font-size:14px; margin:0 0 10px; }
     .sidebar-note { display:none; }
-    .sidebar .muted { margin:0; }
+    .sidebar .muted { margin:0; grid-column:1 / -1; }
     .sidebar #spacerProperties:has(input) { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
     .sidebar label { margin:0; }
     .sidebar input,.sidebar select { padding:7px; margin-top:4px; font-size:12px; }
