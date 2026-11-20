@@ -46,7 +46,7 @@ Run the optional, dependency-free geometry regression checks with:
 node --test tests/layout.test.cjs
 ```
 
-Tests cover small/non-A4 pagination, mixed widths, preserved source intervals, insertion coordinate mapping, long-document geometry, invalid imports, undo/redo and pattern continuity across page boundaries.
+Tests cover small/non-A4 pagination, mixed widths, preserved source intervals, insertion coordinate mapping, long-document geometry, invalid imports, undo/redo, pattern continuity across page boundaries, cut bounds, overlapping cuts, and writing space after cuts.
 
 Browser sanity checks:
 
