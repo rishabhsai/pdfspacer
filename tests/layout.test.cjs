@@ -116,3 +116,49 @@ test('filling the sheet runs to the next A4 boundary, or adds a sheet when littl
     assert.ok(output[1].items.some(item => item.type === 'slice' && item.pageNumber === 2));
     assert.ok(output[3].items.every(item => item.type === 'spacer'), 'an A4 page gets a whole extra sheet');
 });
+test('cuts close the source gap in both exports and never appear on output sheets', () => {
+    const cut = { id: 'cut', y: 100, height: 120, style: 'cut' };
+    const state = layout.validate({ 1: [cut] }, [page]);
+    const result = layout.page(page, state[1]);
+    near(result.height / result.factor, 380);
+    assert.equal(result.items[1].type, 'cut');
+    assert.equal(result.items[1].height, 0);
+    near(layout.sourceAt(result, 150 * result.factor), 270);
+    for (const mode of ['paginated', 'long']) {
+        const slices = layout.paginate(layout.document([page], state), mode).flatMap(sheet => sheet.items);
+        assert.ok(slices.every(item => item.type === 'slice'));
+        near(slices.reduce((sum, item) => sum + item.height / item.factor, 0), 380);
+        assert.ok(slices.every(item => item.sourceY + item.height / item.factor <= 100.00001 || item.sourceY >= 220));
+    }
+});
+test('overlapping cuts and a spacer inside a cut do not restore removed source content', () => {
+    const entries = [
+        { id: 'cut-1', y: 100, height: 150, style: 'cut' },
+        { ...spacer, y: 120, height: 40 },
+        { id: 'cut-2', y: 200, height: 100, style: 'cut' }
+    ];
+    const result = layout.page(page, layout.validate({ 1: entries }, [page])[1]);
+    near(result.height / result.factor, 340);
+    const space = result.items.find(item => item.type === 'spacer');
+    near(space.top / result.factor, 100);
+    near(result.items.at(-1).sourceY, 300);
+    near(layout.sourceAt(result, 150 * result.factor), 310);
+});
+test('cuts validate source boundaries, including whole-page cuts', () => {
+    const cut = { id: 'cut', y: 0, height: page.height, style: 'cut' };
+    const state = layout.validate({ 1: [cut] }, [page]);
+    assert.equal(layout.page(page, state[1]).height, 0);
+    assert.ok(Number.isFinite(layout.sourceAt(layout.page(page, state[1]), 0)));
+    for (const patch of [{ y: 1 }, { height: 0.5 }, { height: Infinity }, { height: NaN }, { y: -1 }]) {
+        assert.throws(() => layout.validate({ 1: [{ ...cut, ...patch }] }, [page]));
+    }
+});
+test('fill after every page accounts for cuts before sizing the writing space', () => {
+    const geometry = [{ width: layout.WIDTH, height: layout.HEIGHT }];
+    const cut = { id: 'cut', y: 100, height: 200, style: 'cut' };
+    const state = layout.afterEveryPage(geometry, { 1: [cut] }, { id: () => 'fill', style: 'plain', fill: true });
+    near(state[1][1].height, 200);
+    const output = layout.paginate(layout.document(geometry, state), 'paginated');
+    assert.equal(output.length, 1);
+    near(output[0].items.reduce((sum, item) => sum + item.height, 0), layout.HEIGHT);
+});
