@@ -21,6 +21,7 @@ class PDFAnswerSpacer {
         this.storage = new SpacerStorage();
         this.history = new SpacerLayout.History();
         this.geometry = [];
+        this.paper = 'a4';
         this.scale = 1;
         this.selected = null;
         this.sourceCache = new Map();
@@ -62,6 +63,7 @@ class PDFAnswerSpacer {
         this.$('zoomInBtn').onclick = () => this.setZoom(this.scale * 1.2);
         this.$('fitWidthBtn').onclick = () => this.fitWidth();
         this.$('showBreaksToggle').onchange = () => this.updateBreaks();
+        this.$('paperSelect').onchange = event => this.setPaper(event.target.value);
         this.$('exportPdfBtn').onclick = () => { this.$('exportDialog').showModal(); };
         this.$('everyPageBtn').onclick = () => { this.$('everyPageStyle').value = this.preset.style; this.$('everyPageDialog').showModal(); };
         this.$('everyPageCancelBtn').onclick = () => this.$('everyPageDialog').close();
@@ -157,12 +159,19 @@ class PDFAnswerSpacer {
             const fingerprint = candidate.fingerprints[0];
             if (saved?.pdfName && saved.pdfName !== fingerprint) throw new Error('The saved layout belongs to a different PDF.');
             const state = SpacerLayout.validate(saved?.spacers || {}, geometry);
+            const letter = SpacerLayout.PAPERS.letter;
+            const ratio = geometry[0].width / geometry[0].height;
+            const detectedPaper = Math.abs(ratio / (letter.width / letter.height) - 1) <= 0.02 ? 'letter' : 'a4';
+            const paper = saved ? saved.paper ?? 'a4' : detectedPaper;
+            SpacerLayout.document(geometry, state, paper);
             const previous = this.pdfDocument;
             this.pdfDocument = candidate;
             this.pdfData = bytes;
             this.pdfName = file instanceof URL ? 'sample-worksheet.pdf' : file.name;
             this.fingerprint = fingerprint;
             this.geometry = geometry;
+            this.paper = paper;
+            this.updatePaperControls();
             this.history = new SpacerLayout.History(state);
             this.selected = null;
             this.sourceCache.clear();
@@ -193,7 +202,7 @@ class PDFAnswerSpacer {
             if (!saved.pdf || generation !== this.generation) return;
             // One-time upgrade of layouts saved by the previous editor.
             const layout = saved.layout || JSON.parse(localStorage.getItem('pdfSpacerSettings') || 'null');
-            await this.loadPDF(new File([saved.pdf.data], saved.pdf.name, { type: 'application/pdf' }), layout, generation);
+            await this.loadPDF(new File([saved.pdf.data], saved.pdf.name, { type: 'application/pdf' }), { ...layout, paper: saved.paper }, generation);
             if (generation === this.generation && this.pdfDocument) localStorage.removeItem('pdfSpacerSettings');
         } catch (error) { this.status('Your saved session could not be restored. Choose a PDF to start again.', true); }
     }
@@ -204,7 +213,7 @@ class PDFAnswerSpacer {
         this.status('Saving on this device…');
         const statusRevision = this.statusRevision;
         try {
-            await this.storage.write(pdf, this.project());
+            await this.storage.write(pdf, this.project(), this.paper);
             if (revision === this.saveRevision) {
                 this.unsaved = false;
                 if (statusRevision === this.statusRevision) this.status('Saved on this device');
@@ -260,10 +269,28 @@ class PDFAnswerSpacer {
         this.sourceCache.clear();
         this.renderDocument(true);
     }
-    fitWidth() { this.setZoom(Math.min(1.3, (this.viewport.clientWidth - 40) / SpacerLayout.WIDTH), true); }
+    setPaper(paper) {
+        // Validate before changing the document or its saved setting.
+        SpacerLayout.document(this.geometry, this.history.current, paper);
+        if (paper === this.paper) return;
+        this.paper = paper;
+        this.sourceCache.clear();
+        this.updatePaperControls();
+        if (this.fitted) this.fitWidth();
+        else this.renderDocument(true);
+        this.updateProperties();
+        this.persist();
+    }
+    updatePaperControls() {
+        const paper = SpacerLayout.PAPERS[this.paper];
+        this.$('paperSelect').value = this.paper;
+        document.querySelectorAll('[data-paper-label]').forEach(element => { element.textContent = paper.label; });
+        this.$('halfPageDescription').textContent = `About ${Math.round(paper.height * 25.4 / 72 / 2)} mm of writing space under each page.`;
+    }
+    fitWidth() { this.setZoom(Math.min(1.3, (this.viewport.clientWidth - 40) / SpacerLayout.PAPERS[this.paper].width), true); }
     renderDocument(force = false) {
         if (!this.pdfDocument) return;
-        this.layout = SpacerLayout.document(this.geometry, this.history.current);
+        this.layout = SpacerLayout.document(this.geometry, this.history.current, this.paper);
         if (force) {
             this.renderGeneration++;
             this.observer?.disconnect();
@@ -289,7 +316,7 @@ class PDFAnswerSpacer {
                 this.viewer.append(element);
                 this.observer.observe(element);
             }
-            element.style.width = `${SpacerLayout.WIDTH * this.scale}px`;
+            element.style.width = `${this.layout.width * this.scale}px`;
             element.style.height = `${pageLayout.height * this.scale}px`;
             const signature = JSON.stringify(this.history.current[pageLayout.pageNumber] || []);
             if (element.dataset.signature !== signature) {
@@ -312,7 +339,7 @@ class PDFAnswerSpacer {
         const promise = (async () => {
             const page = await doc.getPage(pageNumber);
             const density = Math.min(window.devicePixelRatio || 1, 2);
-            const viewport = page.getViewport({ scale: SpacerLayout.WIDTH / geometry.width * scale * density });
+            const viewport = page.getViewport({ scale: this.layout.width / geometry.width * scale * density });
             const canvas = document.createElement('canvas');
             canvas.width = Math.ceil(viewport.width);
             canvas.height = Math.ceil(viewport.height);
@@ -335,7 +362,7 @@ class PDFAnswerSpacer {
             if (item.type === 'slice') {
                 const canvas = document.createElement('canvas');
                 canvas.className = 'content-slice';
-                const ratio = source.width / SpacerLayout.WIDTH;
+                const ratio = source.width / this.layout.width;
                 canvas.width = source.width;
                 canvas.height = Math.max(1, Math.ceil(item.height * ratio));
                 canvas.style.cssText = `top:${item.top * this.scale}px;width:100%;height:${item.height * this.scale}px`;
@@ -390,14 +417,14 @@ class PDFAnswerSpacer {
         if (!this.layout || !this.$('showBreaksToggle').checked) return;
         for (const page of this.layout.pages) {
             const element = this.viewer.querySelector(`[data-page-number="${page.pageNumber}"]`);
-            let boundary = Math.ceil((page.offset + 1e-6) / SpacerLayout.HEIGHT) * SpacerLayout.HEIGHT;
+            let boundary = Math.ceil((page.offset + 1e-6) / this.layout.height) * this.layout.height;
             while (boundary < page.offset + page.height - 1e-6) {
                 const line = document.createElement('div');
                 line.className = 'page-break';
                 line.style.top = `${(boundary - page.offset) * this.scale}px`;
-                line.textContent = `A4 page ${Math.round(boundary / SpacerLayout.HEIGHT) + 1}`;
+                line.textContent = `${SpacerLayout.PAPERS[this.paper].label} page ${Math.round(boundary / this.layout.height) + 1}`;
                 element.append(line);
-                boundary += SpacerLayout.HEIGHT;
+                boundary += this.layout.height;
             }
         }
     }
@@ -447,8 +474,8 @@ class PDFAnswerSpacer {
         const input = this.$('everyPageHeight');
         if (size === 'custom' && (!input.checkValidity() || !Number.isFinite(input.valueAsNumber))) { input.reportValidity(); return; }
         const style = this.$('everyPageStyle').value;
-        const mm = size === 'half' ? 148.5 : input.valueAsNumber;
-        const state = SpacerLayout.afterEveryPage(this.geometry, this.history.current, { ...this.preset, style, id: () => crypto.randomUUID(), fullPage: size === 'full', fill: size === 'fill', height: mm * 72 / 25.4 });
+        const mm = size === 'half' ? this.layout.height * 25.4 / 72 / 2 : input.valueAsNumber;
+        const state = SpacerLayout.afterEveryPage(this.geometry, this.history.current, { ...this.preset, paper: this.paper, style, id: () => crypto.randomUUID(), fullPage: size === 'full', fill: size === 'fill', height: mm * 72 / 25.4 });
         this.preset = { ...this.preset, style };
         this.selected = null;
         this.$('everyPageDialog').close();
@@ -468,7 +495,7 @@ class PDFAnswerSpacer {
             panel.append(hint);
             return;
         }
-        const factor = SpacerLayout.WIDTH / this.geometry[this.selected.pageNumber - 1].width;
+        const factor = this.layout.width / this.geometry[this.selected.pageNumber - 1].width;
         const mm = factor * 25.4 / 72;
         const field = (label, key, max, multiplier = mm, min = key === 'y' ? 0 : (key === 'height' ? 1 : 2) * multiplier) => {
             const wrapper = document.createElement('label');
@@ -489,7 +516,7 @@ class PDFAnswerSpacer {
             hint.textContent = 'Removed part of the page. Hidden in the export; the content stays in the file.';
             panel.append(hint);
             const pageHeight = this.geometry[this.selected.pageNumber - 1].height;
-            field('Removed height (mm on A4)', 'height', pageHeight - spacer.y, mm, Math.max(1, mm));
+            field('Removed height (mm)', 'height', pageHeight - spacer.y, mm, Math.max(1, mm));
             field('Position (mm from source top)', 'y', pageHeight - spacer.height);
             const restore = document.createElement('button');
             restore.className = 'btn danger'; restore.textContent = 'Restore'; restore.onclick = () => this.remove();
@@ -506,7 +533,7 @@ class PDFAnswerSpacer {
         select.onchange = () => this.edit({ style: select.value });
         styleLabel.append(select);
         panel.append(styleLabel);
-        field('Height (mm on A4)', 'height', 10000);
+        field('Height (mm)', 'height', 10000);
         field('Insertion position (mm from source top)', 'y', this.geometry[this.selected.pageNumber - 1].height);
         if (spacer.style !== 'plain') field('Pattern spacing (mm)', spacer.style === 'ruled' ? 'ruleSpacing' : spacer.style === 'dot-grid' ? 'dotPitch' : 'gridSize', 100);
         const actions = document.createElement('div'); actions.className = 'property-actions';
@@ -637,7 +664,7 @@ class PDFAnswerSpacer {
                 element.style.height = `${height * item.factor * this.scale}px`;
             } else {
                 const others = this.history.current[pageNumber].filter(spacer => spacer.id !== item.spacer.id);
-                const layout = SpacerLayout.page(this.geometry[pageNumber - 1], others);
+                const layout = SpacerLayout.page(this.geometry[pageNumber - 1], others, this.paper);
                 const top = Math.max(0, Math.min(layout.height, startTop + delta));
                 patch = { y: SpacerLayout.sourceAt(layout, top) };
                 element.style.top = `${top * this.scale}px`;
@@ -790,12 +817,13 @@ class PDFAnswerSpacer {
         this.exporting = true;
         const mode = document.querySelector('input[name="exportMode"]:checked').value;
         const credit = this.$('creditToggle')?.checked ?? true;
+        const paper = this.paper;
         const filename = this.pdfName;
         this.$('exportConfirmBtn').disabled = true;
         this.$('previewBtn').disabled = true;
         try {
             this.status('Preparing PDF…');
-            const data = await SpacerExport.create(this.pdfData.slice(0), this.geometry, this.history.current, mode, fraction => this.status(`Preparing PDF… ${Math.round(fraction * 100)}%`), { credit });
+            const data = await SpacerExport.create(this.pdfData.slice(0), this.geometry, this.history.current, mode, fraction => this.status(`Preparing PDF… ${Math.round(fraction * 100)}%`), { credit, paper });
             if (preview) {
                 this.$('previewDialog').showModal();
                 this.$('previewPages').textContent = 'Rendering preview…';
@@ -819,7 +847,7 @@ class PDFAnswerSpacer {
                 this.$('exportDialog').close();
                 this.status('PDF exported');
                 const entries = Object.values(this.history.current).flat();
-                this.track('pdf_exported', { mode, credit, pages: this.geometry.length, spacers: entries.filter(item => item.style !== 'cut').length, cuts: entries.filter(item => item.style === 'cut').length });
+                this.track('pdf_exported', { mode, paper, credit, pages: this.geometry.length, spacers: entries.filter(item => item.style !== 'cut').length, cuts: entries.filter(item => item.style === 'cut').length });
                 this.askPurpose();
                 this.$('sharePrompt')?.showModal();
             }

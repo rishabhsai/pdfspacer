@@ -49,7 +49,7 @@
             <em>spacer_added</em>, <em>section_cut</em> (removed height in millimetres and <code>input</code>: <code>drag</code> or <code>tap</code>), <em>every_page_added</em>, <em>slides_hint</em>, <em>pdf_exported</em>, <em>share_clicked</em> and, when you tap an answer after an export, <em>export_purpose</em>. Each event
             carries counts and settings only, such as the number of pages, the paper style and the export layout,
             plus the standard request data PostHog receives (IP address, user agent, page URL). It never carries
-            your PDF, its name or its text.</p>
+            your PDF, its name or its text. The <em>pdf_exported</em> event also includes the chosen paper size: <code>a4</code> or <code>letter</code>.</p>
         <p>The counter runs in memory only. It sets no cookies and writes nothing to your device, so each page load
             is counted as a new anonymous visitor, and PostHog's person profiles are turned off. If your browser
             sends Do Not Track or Global Privacy Control, the script does not load at all. PostHog processes this

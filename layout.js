@@ -1,7 +1,13 @@
-/* Shared geometry: source coordinates are PDF.js viewport units; output is A4 points. */
+/* Shared geometry: source coordinates are PDF.js viewport units; output is points on the selected paper. */
 const SpacerLayout = (() => {
-    const WIDTH = 595.275590551;
-    const HEIGHT = 841.88976378;
+    const PAPERS = {
+        a4: { label: 'A4', width: 595.275590551, height: 841.88976378 },
+        letter: { label: 'US Letter', width: 612, height: 792 }
+    };
+    function paperSize(paper) {
+        if (!Object.hasOwn(PAPERS, paper)) throw new Error('Unknown paper size.');
+        return PAPERS[paper];
+    }
     // PDF.js rounds page sizes, so an A4 source can overrun a sheet by a few microns; slivers below this are dropped rather than spilling onto a new sheet.
     const EPSILON = 0.05;
     const styles = ['plain', 'ruled', 'squared', 'dot-grid', 'cut'];
@@ -37,8 +43,8 @@ const SpacerLayout = (() => {
         }
         return result;
     }
-    function page(geometry, spacers = []) {
-        const factor = WIDTH / geometry.width;
+    function page(geometry, spacers = [], paper = 'a4') {
+        const factor = paperSize(paper).width / geometry.width;
         const items = [];
         let sourceY = 0;
         let top = 0;
@@ -63,32 +69,34 @@ const SpacerLayout = (() => {
         }
         return { items, height: top, factor };
     }
-    function document(geometry, state) {
-        let height = 0;
+    function document(geometry, state, paper = 'a4') {
+        const { width, height } = paperSize(paper);
+        let contentHeight = 0;
         const pages = geometry.map((size, index) => {
-            const layout = page(size, state[index + 1]);
-            const result = { ...layout, offset: height, pageNumber: index + 1 };
-            height += layout.height;
+            const layout = page(size, state[index + 1], paper);
+            const result = { ...layout, offset: contentHeight, pageNumber: index + 1 };
+            contentHeight += layout.height;
             return result;
         });
-        return { pages, height };
+        return { paper, width, height, contentHeight, pages };
     }
     // Below this much room left on a sheet, "fill" adds a whole extra sheet of writing space as well.
     const MIN_FILL = 40 * 72 / 25.4;
-    /* Appends one spacer to the foot of every page. `height` is output points; `fullPage` pads so the page begins on a fresh A4 sheet; `fill` runs to the end of the current sheet. */
+    /* Appends one spacer to the foot of every page. `height` is output points; `fullPage` pads so the page begins on a fresh sheet; `fill` runs to the end of the current sheet. */
     function afterEveryPage(geometry, state, options) {
-        const { id, style, ruleSpacing, dotPitch, gridSize } = options;
+        const { id, style, ruleSpacing, dotPitch, gridSize, paper = 'a4' } = options;
+        const sheet = paperSize(paper);
         const result = { ...state };
         let offset = 0;
         geometry.forEach((size, index) => {
             const number = index + 1;
-            const layout = page(size, result[number]);
+            const layout = page(size, result[number], paper);
             const end = offset + layout.height;
             let height = options.height;
             if (options.fullPage || options.fill) {
-                const remainder = end % HEIGHT;
-                const pad = remainder < EPSILON || HEIGHT - remainder < EPSILON ? 0 : HEIGHT - remainder;
-                height = options.fullPage || pad < MIN_FILL ? HEIGHT + pad : pad;
+                const remainder = end % sheet.height;
+                const pad = remainder < EPSILON || sheet.height - remainder < EPSILON ? 0 : sheet.height - remainder;
+                height = options.fullPage || pad < MIN_FILL ? sheet.height + pad : pad;
             }
             const spacer = { id: id(), y: size.height, height: height / layout.factor, style, ruleSpacing, dotPitch, gridSize };
             result[number] = [...(result[number] || []), spacer];
@@ -108,7 +116,7 @@ const SpacerLayout = (() => {
     }
     function paginate(layout, mode) {
         if (!['paginated', 'long'].includes(mode)) throw new Error('Choose an export layout.');
-        const pageHeight = mode === 'long' ? layout.height : HEIGHT;
+        const pageHeight = mode === 'long' ? layout.contentHeight : layout.height;
         const pages = [];
         for (const source of layout.pages) {
             for (const item of source.items) {
@@ -119,7 +127,7 @@ const SpacerLayout = (() => {
                     const top = Math.max(0, absolute - index * pageHeight);
                     const height = Math.min(item.height - used, pageHeight - top);
                     if (height < EPSILON) break;
-                    pages[index] ??= { width: WIDTH, height: pageHeight, items: [] };
+                    pages[index] ??= { width: layout.width, height: pageHeight, items: [] };
                     pages[index].items.push({ ...item, pageNumber: source.pageNumber, top, height,
                         sourceY: item.type === 'slice' ? item.sourceY + used / item.factor : undefined,
                         patternOffset: used });
@@ -142,5 +150,6 @@ const SpacerLayout = (() => {
         undo() { if (this.past.length) { this.future.push(this.current); this.current = this.past.pop(); return true; } return false; }
         redo() { if (this.future.length) { this.past.push(this.current); this.current = this.future.pop(); return true; } return false; }
     }
-    return { WIDTH, HEIGHT, validate, page, document, afterEveryPage, sourceAt, paginate, History };
+    // A4 default dimensions retained for existing default-paper callers and regression fixtures.
+    return { PAPERS, WIDTH: PAPERS.a4.width, HEIGHT: PAPERS.a4.height, validate, page, document, afterEveryPage, sourceAt, paginate, History };
 })();

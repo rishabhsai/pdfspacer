@@ -162,3 +162,57 @@ test('fill after every page accounts for cuts before sizing the writing space', 
     assert.equal(output.length, 1);
     near(output[0].items.reduce((sum, item) => sum + item.height, 0), layout.HEIGHT);
 });
+
+test('Letter sources paginate at their original size without spill', () => {
+    const geometry = Array.from({ length: 3 }, () => ({ width: 612, height: 792 }));
+    const document = layout.document(geometry, {}, 'letter');
+    assert.equal(document.paper, 'letter');
+    near(document.width, 612);
+    near(document.height, 792);
+    const sheets = layout.paginate(document, 'paginated');
+    assert.equal(sheets.length, 3);
+    sheets.forEach((sheet, index) => {
+        near(sheet.width, 612);
+        near(sheet.height, 792);
+        assert.equal(sheet.items.length, 1);
+        near(sheet.items[0].factor, 1);
+        near(sheet.items[0].height, 792);
+        assert.equal(sheet.items[0].pageNumber, index + 1);
+    });
+    const long = layout.paginate(document, 'long');
+    assert.equal(long.length, 1);
+    near(long[0].width, 612);
+    near(long[0].height, 3 * 792);
+});
+test('full blank pages land on their own Letter sheets, including mixed sources and existing space', () => {
+    let counter = 0;
+    const geometry = [{ width: 612, height: 792 }, { width: 300, height: 400 }, { width: 612, height: 792 }];
+    const state = layout.afterEveryPage(geometry, { 3: [spacer] }, {
+        id: () => `letter-${counter++}`, style: 'plain', fullPage: true, paper: 'letter'
+    });
+    const sheets = layout.paginate(layout.document(geometry, state, 'letter'), 'paginated');
+    assert.equal(sheets.length, 8);
+    for (const index of [1, 4, 7]) {
+        near(sheets[index].width, 612);
+        near(sheets[index].height, 792);
+        assert.ok(sheets[index].items.every(item => item.type === 'spacer'));
+        near(sheets[index].items.reduce((sum, item) => sum + item.height, 0), 792);
+    }
+});
+test('Letter fill and fixed heights use the selected sheet dimensions', () => {
+    const geometry = [{ width: 720, height: 405 }];
+    const options = { id: () => 'letter-fill', style: 'plain', paper: 'letter' };
+    const state = layout.afterEveryPage(geometry, {}, { ...options, fill: true });
+    const sheets = layout.paginate(layout.document(geometry, state, 'letter'), 'paginated');
+    assert.equal(sheets.length, 1);
+    near(sheets[0].items.reduce((sum, item) => sum + item.height, 0), 792);
+    const fixed = layout.afterEveryPage(geometry, {}, { ...options, height: 200 });
+    near(fixed[1][0].height * 612 / 720, 200);
+});
+test('unknown paper keys are rejected at layout boundaries', () => {
+    for (const paper of ['legal', '', 'constructor', '__proto__', null]) {
+        assert.throws(() => layout.document([page], {}, paper), /Unknown paper size\./);
+        assert.throws(() => layout.page(page, [], paper), /Unknown paper size\./);
+        assert.throws(() => layout.afterEveryPage([], {}, { paper }), /Unknown paper size\./);
+    }
+});
