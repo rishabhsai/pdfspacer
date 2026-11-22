@@ -28,6 +28,8 @@ class PDFAnswerSpacer {
         this.renderGeneration = 0;
         this.saveRevision = 0;
         this.tool = 'add';
+        this.cut = null;
+        this.statusRevision = 0;
         this.preset = { style: 'plain', ruleSpacing: 20, dotPitch: 10, gridSize: 20 };
         this.$ = id => document.getElementById(id);
         this.viewer = this.$('pdfViewer');
@@ -124,6 +126,7 @@ class PDFAnswerSpacer {
         });
     }
     status(message, error = false) {
+        this.statusRevision++;
         this.$('status').textContent = message;
         this.$('status').classList.toggle('error', error);
     }
@@ -199,9 +202,13 @@ class PDFAnswerSpacer {
         const revision = ++this.saveRevision;
         this.saving = true;
         this.status('Saving on this device…');
+        const statusRevision = this.statusRevision;
         try {
             await this.storage.write(pdf, this.project());
-            if (revision === this.saveRevision) { this.unsaved = false; this.status('Saved on this device'); }
+            if (revision === this.saveRevision) {
+                this.unsaved = false;
+                if (statusRevision === this.statusRevision) this.status('Saved on this device');
+            }
         } catch (error) {
             if (revision === this.saveRevision) { this.unsaved = true; this.status('Could not autosave. Download your layout from Project before closing.', true); }
         } finally { if (revision === this.saveRevision) this.saving = false; }
@@ -232,7 +239,12 @@ class PDFAnswerSpacer {
         this.$('undoBtn').disabled = !this.history.past.length;
         this.$('redoBtn').disabled = !this.history.future.length;
     }
+    clearCut() {
+        this.cut = null;
+        this.viewer.querySelectorAll('.cut-start').forEach(line => line.remove());
+    }
     setTool(tool) {
+        this.clearCut();
         this.tool = tool;
         this.$('addSpaceBtn').setAttribute('aria-pressed', tool === 'add');
         this.$('selectBtn').setAttribute('aria-pressed', tool === 'select');
@@ -544,14 +556,17 @@ class PDFAnswerSpacer {
             if (element.hasPointerCapture(event.pointerId)) element.releasePointerCapture(event.pointerId);
             band.remove();
             this.gesture = false;
-            if (pointer.type !== 'pointerup') return;
+            if (pointer.type !== 'pointerup' || this.tool !== 'cut') return;
             if (!active) { this.status('Drag over the part of the page you want to remove'); return; }
             const { y, height } = bounds();
             if (height < 1 || height * layout.factor < 72 / 25.4) return;
             const cut = { id: crypto.randomUUID(), y, height, style: 'cut' };
             this.selected = { id: cut.id, pageNumber };
             this.commit({ ...this.history.current, [pageNumber]: [...(this.history.current[pageNumber] || []), cut] });
-            this.track('section_cut', { mm: Math.round(height * layout.factor * 25.4 / 72) });
+            this.setTool('select');
+            const mm = Math.round(height * layout.factor * 25.4 / 72);
+            this.status(`Removed ${mm} mm. Select the dashed line to restore it.`);
+            this.track('section_cut', { mm, input: 'drag' });
         };
         element.addEventListener('pointermove', move);
         element.addEventListener('pointerup', finish);
@@ -600,6 +615,7 @@ class PDFAnswerSpacer {
     }
     handleKeydown(event) {
         if (!this.pdfDocument || event.target.closest('input, select, textarea, dialog')) return;
+        if (event.key === 'Escape' && this.tool === 'cut') { this.setTool('select'); return; }
         if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') { event.preventDefault(); this.travel(event.shiftKey ? 'redo' : 'undo'); return; }
         if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') { event.preventDefault(); this.travel('redo'); return; }
         if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); this.remove(); }
