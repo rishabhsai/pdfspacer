@@ -23,8 +23,9 @@ Keep the app zero‑dependency and browser‑only. If you refactor, preserve a C
 
 Export
 - Open Export dialog from `Export PDF`.
-- Modes: `Paginated A4` (default) or `Single Long Page`.
-- Options: Render Scale (1x/2x/3x) and Image Quality (0.6/0.8/0.9).
+- Modes: `Paginated sheets` (default) or `Single long page`; both use the selected paper width.
+- The Export dialog's Paper selector offers A4 and US Letter (612 × 792 pt, 8.5 × 11 in). New PDFs use Letter when the first page's aspect ratio is within 2% of Letter, otherwise A4. The setting persists in IndexedDB; older sessions default to A4. Paper changes update the editor immediately and are not undoable.
+- `SpacerLayout.PAPERS` defines sheet dimensions; document layouts carry `paper`, `width`, `height` (sheet height), and `contentHeight` (total flow height). Spacer coordinates stay in source units across paper changes.
 - Note: Continuous flow across source pages is enabled by default in Paginated mode; the explicit toggle was removed for simplicity.
 
 ## Coding Style & Naming Conventions
@@ -37,11 +38,11 @@ Viewer/Rendering architecture
 - Continuous scroll viewer: renders all pages stacked; `renderCurrentPage(options)` tokenizes to finalize only latest render, preserves scroll, and skips loader during interactive updates.
 - Cut tool: drag a full-width band to hide it and close the gap; the per-page list stores `{ id, y, height, style: 'cut' }` in source units. A zero-height cut mark selects the band for Restore. Exports crop the original vector content, so hidden text stays in the file and can still be extracted; this is not redaction.
 - Spacer interactions: click‑vs‑drag threshold (5px) avoids accidental drags; drag/resize coalesced via `requestAnimationFrame` and committed on mouseup.
-- Page break preview: dashed overlays from A4 aspect; toggle in header.
+- Page break preview: dashed overlays from the selected paper dimensions; toggle in header.
 - Placement guide: currently not exposed in UI.
 - Context menu: edit, delete, duplicate.
 - Last-used spacer preset remembered and applied to new spacers.
-- `Every page` toolbar button opens a dialog that appends one spacer to the foot of every page (`SpacerLayout.afterEveryPage`); the full-page option pads to the next A4 boundary so each blank page is its own sheet; the fill option runs to the end of the current sheet (or adds a whole sheet when under 40 mm is left). The same button and dialog exist in `chatgpt/app/index.html`. On the main site, PDFs with a landscape majority show a sidebar hint that opens this dialog with fill and ruled lines selected; adding a spacer hides it, and “Not now” remembers dismissal in `localStorage.pdfSpacerSlidesHintDismissed`.
+- `Every page` toolbar button opens a dialog that appends one spacer to the foot of every page (`SpacerLayout.afterEveryPage`); the full-page option pads to the next selected-paper boundary so each blank page is its own sheet; the fill option runs to the end of the current sheet (or adds a whole sheet when under 40 mm is left). The same button and dialog exist in `chatgpt/app/index.html`. On the main site, PDFs with a landscape majority show a sidebar hint that opens this dialog with fill and ruled lines selected; adding a spacer hides it, and “Not now” remembers dismissal in `localStorage.pdfSpacerSlidesHintDismissed`.
 - Export adds a small clickable "Made with pdfspacer.com" line to the last sheet unless the Export dialog checkbox is cleared (`SpacerExport.create(..., { credit })`). After a download the `#sharePrompt` dialog offers Copy link / Share; on the first and tenth export (`localStorage.pdfSpacerExports`) it first shows only the `PURPOSES` chips plus Skip (`export_purpose` event, `purpose: 'skipped'` for Skip), then an optional one-line wish (`feedback` event with `type: 'wish'`) and the share buttons (`#shareSection`, driven by the `PURPOSE_STEPS` table); the chips never appear when analytics is off; and `#feedbackDialog` (opened from any `[data-feedback]` link) sends a `feedback` event, or opens a prefilled GitHub issue when analytics is off. New element ids are bound with null checks because `chatgpt/app/index.html` does not have them.
 - Export pipelines: PDF.js rendering onto canvases; optional continuous-flow pagination (enabled by default in Paginated mode).
 
