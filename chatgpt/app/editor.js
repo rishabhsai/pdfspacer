@@ -12,6 +12,7 @@ import { OpenAIExtensions, OpenAIFileEntrypointInputSchema } from '@openai/mcp-e
  * @typedef {object} SaveRequest
  * @property {HostFileSource} source
  * @property {object} layout spacer state that was exported
+ * @property {string} paper paper size that was exported
  */
 
 const PDF_TYPE = 'application/pdf';
@@ -65,6 +66,7 @@ function connectEditor(editor) {
         /** @type {Source | null} */
         source: null,
         savedLayout: null,
+        savedPaper: null,
         saving: false,
         updateQueued: false,
         subscribedUri: null,
@@ -73,7 +75,7 @@ function connectEditor(editor) {
     const anchorDownload = editor.download.bind(editor);
     const fail = action => error => editor.status(`${action}: ${error.message}`, true);
 
-    const isDirty = () => editor.history.current !== session.savedLayout;
+    const isDirty = () => editor.history.current !== session.savedLayout || editor.paper !== session.savedPaper;
     const canSave = () => session.source?.kind === 'host-file' && session.source.writable && openai.resources != null;
 
     function render() {
@@ -90,6 +92,7 @@ function connectEditor(editor) {
         if (editor.generation !== generation || editor.pdfDocument === previous) return false;
         session.source = source;
         session.savedLayout = editor.history.current;
+        session.savedPaper = editor.paper;
         editor.status('');
         render();
         return true;
@@ -120,16 +123,17 @@ function connectEditor(editor) {
         if (session.source !== request.source) return;
         session.source = { ...request.source, etag };
         session.savedLayout = request.layout;
+        session.savedPaper = request.paper;
     }
 
     async function save() {
         if (session.saving || !canSave()) return;
-        const request = { source: session.source, layout: editor.history.current };
+        const request = { source: session.source, layout: editor.history.current, paper: editor.paper };
         session.saving = true;
         render();
         try {
             const bytes = await SpacerExport.create(editor.pdfData.slice(0), editor.geometry, request.layout, exportMode(),
-                fraction => editor.status(`Preparing PDF… ${Math.round(fraction * 100)}%`));
+                fraction => editor.status(`Preparing PDF… ${Math.round(fraction * 100)}%`), { credit: true, paper: request.paper });
             editor.status('Saving to ChatGPT…');
             const { resourceUri, etag } = request.source;
             const result = await openai.resources.write(resourceUri, { blob: bytesToBase64(bytes), ...(etag ? { ifMatch: etag } : {}) });

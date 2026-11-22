@@ -20,13 +20,15 @@ class SpacerStorage {
         return this.transaction((store, done) => {
             const pdf = store.get('currentPDF');
             const layout = store.get('layout');
-            layout.onsuccess = () => done({ pdf: pdf.result, layout: layout.result });
+            const paper = store.get('paper');
+            paper.onsuccess = () => done({ pdf: pdf.result, layout: layout.result, paper: paper.result ?? 'a4' });
         });
     }
-    write(pdf, layout) {
+    write(pdf, layout, paper = 'a4') {
         const operation = this.queue.catch(() => {}).then(() => this.transaction(store => {
             if (pdf) store.put(pdf, 'currentPDF');
             store.put(layout, 'layout');
+            store.put(paper, 'paper');
         }, 'readwrite'));
         this.queue = operation;
         return operation;
@@ -35,6 +37,7 @@ class SpacerStorage {
         const operation = this.queue.catch(() => {}).then(() => this.transaction(store => {
             store.delete('currentPDF');
             store.delete('layout');
+            store.delete('paper');
         }, 'readwrite'));
         this.queue = operation;
         return operation;

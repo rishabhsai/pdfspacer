@@ -175,3 +175,28 @@ test('global or thread entrypoint: choose a PDF in the app and download through 
     assert.ok(await totalHeight(Buffer.from(resource.blob, 'base64')) > await totalHeight(await readFile(SAMPLE)));
     await verify();
 });
+
+test('paper changes save to the host and remain dirty until saved', async () => {
+    const { page, frame, app, verify } = await openHost('file');
+    await waitForDocument(app, 'sample.pdf');
+    await app.locator('#exportPdfBtn').click();
+    await app.locator('#paperSelect').selectOption('letter');
+    await app.locator('#exportCancelBtn').click();
+    await app.locator('#saveToChatGptBtn').click();
+    await statusShows(app, 'Saved to ChatGPT');
+    const log = await hostLog(page);
+    const pdf = await pdfLib.PDFDocument.load(Buffer.from(log.writes[0].blob, 'base64'));
+    assert.ok(pdf.getPageCount() > 0);
+    for (const sheet of pdf.getPages()) {
+        assert.equal(sheet.getWidth(), 612);
+        assert.equal(sheet.getHeight(), 792);
+    }
+    await app.locator('#exportPdfBtn').click();
+    await app.locator('#paperSelect').selectOption('a4');
+    await app.locator('#exportCancelBtn').click();
+    await page.evaluate(() => window.host.replaceFile(window.host.original));
+    await statusShows(app, 'Your unsaved spaces are kept');
+    assert.equal(await app.locator('#paperSelect').inputValue(), 'a4');
+    assert.equal(await frame.evaluate(() => window.pdfSpacer.paper), 'a4');
+    await verify();
+});
