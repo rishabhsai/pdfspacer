@@ -36,6 +36,11 @@
             "source": "/add-lines-to-pdf-worksheet",
             "destination": "/guide#worksheets",
             "permanent": true
+        },
+        {
+            "source": "/insert-blank-page-after-every-page-pdf",
+            "destination": "/guide#every-page",
+            "permanent": true
         }
     ],
     "rewrites": [
