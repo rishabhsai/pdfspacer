@@ -4,7 +4,7 @@
 - `index.html` — main application UI; loads PDF.js and jsPDF from CDNs and `app.js`.
 - `app.js` — core logic (`PDFAnswerSpacer` class), rendering, spacer tools, and export.
 - `styles.css` — UI styles (buttons, layout, viewer, overlays).
-- `guide.html` plus `add-answer-space-to-past-papers.html`, `add-lines-to-pdf-worksheet.html`, `add-space-to-pdf-for-notes.html`, `pdf-homework-spacer.html`, `insert-blank-page-after-every-page-pdf.html`, `add-lines-to-pdf-slides-for-notes.html` — static SEO/guide pages sharing `pages.css`; served at clean URLs (no `.html`) by `vercel.json`. Add new pages to `sitemap.xml` with a `lastmod`.
+- `guide.html` plus `add-answer-space-to-past-papers.html`, `add-space-to-pdf-for-notes.html`, `pdf-homework-spacer.html`, `add-lines-to-pdf-slides-for-notes.html` — static SEO/guide pages sharing `pages.css`; served at clean URLs (no `.html`) by `vercel.json`. Add new pages to `sitemap.xml` with a `lastmod`.
 - `it.html`, `es.html`, `zh.html`, `it/spazio-pdf-appunti.html`, `es/espacio-pdf-apuntes.html`, `zh/pdf-biji-kongbai.html` — Italian, Spanish and Simplified Chinese landing and notes pages, linked with `hreflang` from the English homepage and notes page. The editor itself stays in English; these pages describe it and link to `/`.
 - `privacy.html`, `terms.html`: privacy policy and terms of use for the site and the ChatGPT plugin, served at `/privacy` and `/terms`; linked from the homepage footer and listed in `sitemap.xml`.
 - `analytics.js` — cookieless PostHog wrapper loaded by every page; inert until `KEY` is set. `SpacerAnalytics.track(event, props)` is the only entry point; `app.js` calls it via `this.track`. Events: `pdf_opened`, `spacer_added`, `section_cut`, `every_page_added`, `slides_hint`, `pdf_exported`, `share_clicked`, `export_purpose`, `feedback`.
@@ -47,6 +47,7 @@ Viewer/Rendering architecture
 - Export pipelines: PDF.js rendering onto canvases; optional continuous-flow pagination (enabled by default in Paginated mode).
 
 ## Testing Guidelines
+- Run `node tests/site-check.mjs [baseUrl]` for sitemap, link and FAQ consistency. Supply a production or Vercel preview URL to also check HTTP pages and redirects; Python's server does not support clean URLs.
 - Run layout regression checks with `node --test tests/layout.test.cjs`; verify editor gestures and PDF exports in a browser.
 - If introducing automated tests, place them under `tests/` and document how to run them in the PR. Keep tooling lightweight and optional.
 
