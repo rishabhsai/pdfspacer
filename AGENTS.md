@@ -47,6 +47,7 @@ Viewer/Rendering architecture
 - Export pipelines: PDF.js rendering onto canvases; optional continuous-flow pagination (enabled by default in Paginated mode).
 
 ## Testing Guidelines
+- Run `node tests/site-check.mjs [baseUrl]` for sitemap, link and FAQ consistency. Supply a production or Vercel preview URL to also check HTTP pages and redirects; Python's server does not support clean URLs.
 - Run layout regression checks with `node --test tests/layout.test.cjs`; verify editor gestures and PDF exports in a browser.
 - If introducing automated tests, place them under `tests/` and document how to run them in the PR. Keep tooling lightweight and optional.
 

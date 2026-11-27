@@ -30,7 +30,7 @@ The output preserves original text and graphics. Scans stay images. Interactive 
 ## Files
 
 - `index.html`, `styles.css`: upload-first workspace, landing content and responsive editor UI.
-- `guide.html`, `add-answer-space-to-past-papers.html`, `add-space-to-pdf-for-notes.html`, `pdf-homework-spacer.html`, `pages.css`: static guide pages served at clean URLs in production.
+- `guide.html`, `add-answer-space-to-past-papers.html`, `add-space-to-pdf-for-notes.html`, `pdf-homework-spacer.html`, `add-lines-to-pdf-slides-for-notes.html`, `pages.css`: static guide pages served at clean URLs in production.
 - `images/`: product screenshots used on the landing and guide pages.
 - `app.js`: file lifecycle, editing controls, canvas rendering and export preview.
 - `layout.js`: validated spacer model, source/destination geometry, pagination and undo history.
@@ -41,6 +41,15 @@ The output preserves original text and graphics. Scans stay images. Interactive 
 Source canvases are cached by page at the current zoom, with six cache entries. Pages rasterize near the viewport. Spacer edits rebuild only the changed page's segments; unaffected page elements remain in place. Stale asynchronous renders cannot replace the current document or layout.
 
 ## Verification
+
+Check sitemap files and canonicals, internal links, guide anchors, JSON-LD and visible FAQ answers with plain Node:
+
+```sh
+node tests/site-check.mjs
+node tests/site-check.mjs https://your-preview.vercel.app
+```
+
+The checker covers HTML files at the root and one directory down. The optional base URL adds HTTP status checks for all sitemap pages and both consolidated guide redirects. Use production or a Vercel preview for HTTP mode; Python's local server does not serve clean URLs or Vercel redirects.
 
 Run the optional, dependency-free geometry regression checks with:
 
@@ -70,7 +79,7 @@ Browser sanity checks:
 
 ## Hosting and SEO
 
-Production is the existing Vercel project, explicitly chosen by the owner, at `https://www.pdfspacer.com/`. No build command is required. `vercel.json` serves clean URLs, redirects `/demo` to `/guide`, and revalidates static assets. Vercel project domain settings permanently redirect the apex domain and `pdfspacer.vercel.app` to `www.pdfspacer.com` (308). `.vercelignore` excludes environment files, local project metadata, documentation and tests.
+Production is the existing Vercel project, explicitly chosen by the owner, at `https://www.pdfspacer.com/`. No build command is required. `vercel.json` serves clean URLs, redirects `/demo` to `/guide`, and revalidates static assets. The former worksheet-lines and blank-page guides redirect permanently to `/guide#worksheets` and `/guide#every-page`. Vercel project domain settings permanently redirect the apex domain and `pdfspacer.vercel.app` to `www.pdfspacer.com` (308). `.vercelignore` excludes environment files, local project metadata, documentation and tests.
 
 The homepage opens directly to the PDF workspace, with a file picker, drop area and sample. A compact help disclosure and the linked guide explain PDF spacing without a separate marketing page. Metadata, canonical tags, sitemap, Open Graph image and JSON-LD must use the same public host. Do not invent reviews, ratings or create duplicate pages for keyword variations.
 
