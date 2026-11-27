@@ -29,3 +29,6 @@ figcaption { font-size: 14px; color: #5b6b7a; margin-top: 8px; }
 .related a:hover { border-color: #245c4b; }
 .related span { display: block; font-size: 14px; color: #5b6b7a; margin-top: 2px; }
 .cta { margin: 32px 0; }
+table { width: 100%; border-collapse: collapse; margin: 24px 0; }
+caption { text-align: left; margin-bottom: 8px; }
+th, td { padding: 8px; border-bottom: 1px solid #dce1d9; text-align: left; }

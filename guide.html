@@ -99,6 +99,38 @@
         </div>
         <p>To give every page the same space at once, click <em>Every page</em> in the toolbar. Choose a full blank page, fill the rest of the sheet (a slide on top, lines to the bottom), half a page or a custom height, pick a paper style, and a spacer is added at the foot of each page. Full pages are padded so each one starts on a fresh A4 sheet; see <a href="/insert-blank-page-after-every-page-pdf">inserting a blank page after every page</a> and <a href="/add-lines-to-pdf-slides-for-notes">adding note lines under each slide</a>.</p>
         <p>You can move, duplicate or delete a selected spacer. Use the properties panel for Duplicate and Delete. Drag a spacer to move it or drag its bottom handle to resize it. Heights and pattern spacing are shown in millimetres on A4 paper.</p>
+        <h3>Choose line spacing for the writer</h3>
+        <p>Select a ruled spacer and set <em>Pattern spacing</em> in the properties panel. Start with
+            12 to 15 mm for early years and Key Stage 1 pupils who need room for large handwriting.
+            Try 10 mm for upper primary pupils, or 8 mm for secondary pupils and adults writing smaller
+            letters. These are starting points: match the space to the writer's handwriting, not just their age.</p>
+        <p>Set <em>Height</em> separately to allow for the length of the answer. Increasing line spacing
+            makes each row taller but leaves fewer lines in the same area. For a class worksheet, try one
+            answer area first, then duplicate it and move the copies under similar questions. Give longer
+            responses their own taller spacer instead of making every answer area equally large.</p>
+        <h3>How many lines does a given height give you?</h3>
+        <p>A line sits one spacing interval below the top, and lines on the bottom edge are omitted.
+            Allow a little extra height beyond the last line you need. These examples include 1 mm of
+            extra height; check the export preview before printing.</p>
+        <table>
+            <caption>Spacer heights for common ruled answer areas</caption>
+            <thead><tr><th scope="col">Height</th><th scope="col">Line spacing</th><th scope="col">Lines</th></tr></thead>
+            <tbody>
+                <tr><td>25 mm</td><td>8 mm</td><td>3</td></tr>
+                <tr><td>41 mm</td><td>8 mm</td><td>5</td></tr>
+                <tr><td>51 mm</td><td>10 mm</td><td>5</td></tr>
+                <tr><td>81 mm</td><td>8 mm</td><td>10</td></tr>
+                <tr><td>91 mm</td><td>15 mm</td><td>6</td></tr>
+            </tbody>
+        </table>
+        <h3>Lines, boxes or blank space?</h3>
+        <p>Ruled lines suit sentences and paragraphs. For a single word or number, a plain spacer of
+            15 to 20 mm often gives enough room without a block of unused lines. Squared paper gives
+            small boxes for aligning calculations and columns. Choose plain space for drawings, or a
+            dot grid when a diagram needs a little guidance without solid lines.</p>
+        <p>Each spacer has its own paper style and spacing, so a worksheet can mix ruled responses,
+            squared working and blank sketches. The patterns are light grey to leave handwriting readable.
+            PDFSpacer adds new room below the question; it does not draw lines over the existing words.</p>
         <h2 id="cut">Remove part of a page</h2>
         <p>Choose Cut to remove part of a page, such as an answer key or a question you are skipping. With a mouse, drag over the part to remove. On touch, tap where it starts, then tap where it ends on the same page; you can still scroll between taps. The tool returns to Select after each cut. The content below moves up to close the gap, and a dashed red line marks the join. Select the line and press Restore, or Delete, to bring the content back.</p>
         <p>The hidden part is cropped out of the exported pages, not deleted from the file, the same as cropping a PDF in any editor. It will not print or show on screen, but copying all the text out of the exported PDF can still find it. If the hidden part is confidential, do not rely on Cut to remove it.</p>
@@ -140,10 +172,13 @@
         <p>The app can restore a saved session in the same browser when browser storage is available. For a
             separate copy of your spacer layout, use <em>Project → Download layout</em>. Keep the original PDF too:
             tThe project JSON contains the layout, not the document.</p>
+        <h3>Can I add lines on top of the existing text?</h3>
+        <p>No. PDFSpacer inserts new space rather than drawing over the page, so a spacer always pushes the content below it down. That is what keeps the printed questions readable.</p>
+        <h3>My worksheet is a Word document. Can I use it?</h3>
+        <p>Export it to PDF first from Word or Google Docs, then open the PDF in PDFSpacer.</p>
         <h2 id="related">Guides for specific documents</h2>
     <ul class="related">
         <li><a href="/add-answer-space-to-past-papers">Add answer space to past papers and exam PDFs<span>Squared space for working, ruled space for written answers, A4 pages for printing.</span></a></li>
-        <li><a href="/add-lines-to-pdf-worksheet">Add lines to a PDF worksheet<span>Insert ruled answer lines under each question instead of drawing them by hand.</span></a></li>
         <li><a href="/add-space-to-pdf-for-notes">Add space to a PDF for notes<span>Room to annotate lecture slides and readings in GoodNotes, Notability or on paper.</span></a></li>
         <li><a href="/pdf-homework-spacer">PDF homework spacer<span>Space out homework questions without a script or a PDF editor.</span></a></li>
     </ul>
